@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriGuide — Comprendre et planifier son alimentation</title>
+  <meta name="description" content="Comprendre les grandes approches nutritionnelles (chrononutrition, dissociée, méditerranéenne…), calculer ses besoins et composer ses menus, à la main ou en aléatoire.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🥗</text></svg>">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="logo" href="#" data-page="accueil">🥗 <span>Nutri<strong>Guide</strong></span></a>
+    <nav class="main-nav" id="main-nav">
+      <button class="nav-btn active" data-page="accueil">Accueil</button>
+      <button class="nav-btn" data-page="approches">Les approches</button>
+      <button class="nav-btn" data-page="besoins">Mes besoins</button>
+      <button class="nav-btn" data-page="menus">Mes menus</button>
+      <button class="nav-btn" data-page="aliments">Aliments</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= ACCUEIL ================= -->
+  <section class="page active" id="page-accueil">
+    <div class="hero">
+      <h1>Bien manger, <em>sans prise de tête</em></h1>
+      <p class="hero-sub">Comprenez les grandes approches nutritionnelles, calculez vos besoins réels
+        et composez vos menus — à la main ou générés pour vous, sur un jour ou une semaine.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" data-page="menus">🎲 Générer un menu</button>
+        <button class="btn btn-ghost" data-page="besoins">Calculer mes besoins</button>
+      </div>
+    </div>
+
+    <h2 class="section-title">L'essentiel en 4 cartes</h2>
+    <p class="section-intro">Avant de choisir une « méthode », quelques repères simples qui valent pour tout le monde.</p>
+    <div class="cards-grid" id="bases-grid">
+      <div class="card base-card">
+        <div class="base-icon">🔥</div>
+        <h3>Les calories</h3>
+        <p>C'est l'unité d'énergie des aliments. L'équation de fond est simple : si vous mangez durablement plus
+          que vous ne dépensez, vous stockez ; moins, vous puisez dans les réserves. Tout le reste
+          (méthodes, horaires, associations) vient <em>après</em> cette base.</p>
+      </div>
+      <div class="card base-card">
+        <div class="base-icon">💪</div>
+        <h3>Les protéines <span class="kcal-tag">4 kcal/g</span></h3>
+        <p>Briques des muscles, de la peau, des enzymes. Elles rassasient plus que tout le reste.
+          Repère : environ 0,8 à 1,2 g par kilo de poids corporel et par jour (viande, poisson, œufs,
+          laitages, légumineuses, tofu).</p>
+      </div>
+      <div class="card base-card">
+        <div class="base-icon">⚡</div>
+        <h3>Les glucides <span class="kcal-tag">4 kcal/g</span></h3>
+        <p>Le carburant préféré du corps et du cerveau. Privilégiez les versions complètes (pain complet, riz
+          complet, légumineuses) et les fruits entiers, qui apportent aussi fibres et vitamines — plutôt que
+          le sucre ajouté.</p>
+      </div>
+      <div class="card base-card">
+        <div class="base-icon">🫒</div>
+        <h3>Les lipides <span class="kcal-tag">9 kcal/g</span></h3>
+        <p>Indispensables (hormones, cerveau, vitamines A, D, E, K) mais deux fois plus caloriques.
+          Misez sur huile d'olive et colza, poissons gras, oléagineux ; limitez les graisses des produits
+          ultra-transformés.</p>
+      </div>
+    </div>
+
+    <h2 class="section-title">Comment utiliser ce site</h2>
+    <div class="steps-grid">
+      <div class="step-card"><span class="step-num">1</span>
+        <h3>Explorez les approches</h3>
+        <p>Chrononutrition, alimentation dissociée, méditerranéen… Chaque fiche résume le principe,
+          les points forts et les limites, sans dogme.</p>
+        <button class="link-btn" data-page="approches">Voir les approches →</button>
+      </div>
+      <div class="step-card"><span class="step-num">2</span>
+        <h3>Calculez vos besoins</h3>
+        <p>Votre métabolisme de base et vos besoins quotidiens en calories, selon votre profil et
+          votre objectif (perte, maintien, prise).</p>
+        <button class="link-btn" data-page="besoins">Faire le calcul →</button>
+      </div>
+      <div class="step-card"><span class="step-num">3</span>
+        <h3>Composez vos menus</h3>
+        <p>Générez un menu aléatoire sur 1 jour ou 1 semaine selon l'approche choisie, ou bâtissez le
+          vôtre aliment par aliment, avec le comptage automatique des calories.</p>
+        <button class="link-btn" data-page="menus">Créer un menu →</button>
+      </div>
+    </div>
+
+    <h2 class="section-title">6 réflexes qui changent tout</h2>
+    <div class="tips-grid">
+      <div class="tip">🥦 <strong>La moitié de l'assiette en légumes</strong> aux repas principaux : volume, fibres, satiété, micronutriments.</div>
+      <div class="tip">💧 <strong>De l'eau avant tout.</strong> 1,5 L par jour environ ; la soif est parfois confondue avec la faim.</div>
+      <div class="tip">🏭 <strong>Moins d'ultra-transformés.</strong> Plus la liste d'ingrédients est courte, mieux c'est.</div>
+      <div class="tip">🍽️ <strong>Manger lentement.</strong> La satiété met ~20 minutes à arriver au cerveau.</div>
+      <div class="tip">😴 <strong>Dormir suffisamment.</strong> Le manque de sommeil augmente la faim (ghréline) dès le lendemain.</div>
+      <div class="tip">⚖️ <strong>La régularité bat la perfection.</strong> Un écart ne « ruine » rien : c'est la moyenne de la semaine qui compte.</div>
+    </div>
+
+    <div class="disclaimer">
+      ℹ️ Ce site est informatif et pédagogique : il ne remplace pas l'avis d'un médecin ou d'un(e) diététicien(ne),
+      en particulier en cas de pathologie, de grossesse ou de trouble du comportement alimentaire.
+    </div>
+  </section>
+
+  <!-- ================= APPROCHES ================= -->
+  <section class="page" id="page-approches">
+    <h1 class="page-title">Les grandes approches nutritionnelles</h1>
+    <p class="section-intro">Il n'existe pas une « bonne » façon de manger, mais des cadres différents qui peuvent
+      convenir selon votre rythme, vos goûts et vos objectifs. Cliquez sur une carte pour le détail —
+      et testez chaque approche dans le <button class="inline-link" data-page="menus">générateur de menus</button>.</p>
+    <div class="approches-grid" id="approches-grid"></div>
+  </section>
+
+  <!-- ================= BESOINS ================= -->
+  <section class="page" id="page-besoins">
+    <h1 class="page-title">Calculer mes besoins</h1>
+    <p class="section-intro">On estime d'abord votre <strong>métabolisme de base</strong> (l'énergie que votre corps
+      brûle au repos, formule de Mifflin-St Jeor), puis on le multiplie par votre niveau d'activité pour obtenir
+      votre <strong>dépense quotidienne</strong>. L'objectif ajuste ensuite ce total.</p>
+
+    <div class="besoins-layout">
+      <form class="card form-card" id="besoins-form">
+        <div class="form-row">
+          <label>Sexe</label>
+          <div class="radio-row">
+            <label class="radio-pill"><input type="radio" name="sexe" value="f" checked> Femme</label>
+            <label class="radio-pill"><input type="radio" name="sexe" value="h"> Homme</label>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-row"><label for="age">Âge</label><input type="number" id="age" min="15" max="100" value="35" required> <span class="unit">ans</span></div>
+          <div class="form-row"><label for="poids">Poids</label><input type="number" id="poids" min="35" max="250" value="70" required> <span class="unit">kg</span></div>
+          <div class="form-row"><label for="taille">Taille</label><input type="number" id="taille" min="130" max="220" value="170" required> <span class="unit">cm</span></div>
+        </div>
+        <div class="form-row">
+          <label for="activite">Activité physique</label>
+          <select id="activite">
+            <option value="1.2">Sédentaire — bureau, peu ou pas de sport</option>
+            <option value="1.375" selected>Légère — sport 1 à 3 fois/semaine</option>
+            <option value="1.55">Modérée — sport 3 à 5 fois/semaine</option>
+            <option value="1.725">Élevée — sport 6 à 7 fois/semaine</option>
+            <option value="1.9">Très élevée — travail physique + sport quotidien</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="objectif">Objectif</label>
+          <select id="objectif">
+            <option value="-0.15">Perdre du poids (déficit modéré de 15 %)</option>
+            <option value="0" selected>Maintenir mon poids</option>
+            <option value="0.1">Prendre du poids / de la masse (+10 %)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Calculer</button>
+      </form>
+
+      <div id="besoins-resultats" class="besoins-resultats hidden">
+        <div class="result-tiles">
+          <div class="result-tile"><span class="result-label">Métabolisme de base</span><span class="result-value" id="res-mb">—</span><span class="result-unit">kcal / jour au repos</span></div>
+          <div class="result-tile"><span class="result-label">Dépense quotidienne</span><span class="result-value" id="res-tdee">—</span><span class="result-unit">kcal / jour avec activité</span></div>
+          <div class="result-tile highlight"><span class="result-label">Votre objectif</span><span class="result-value" id="res-cible">—</span><span class="result-unit">kcal / jour</span></div>
+        </div>
+        <div class="card" id="res-macros-card">
+          <h3>Répartition indicative des macronutriments</h3>
+          <div id="res-macros"></div>
+          <p class="small-note">Répartition « équilibre classique » (15 % protéines, 50 % glucides, 35 % lipides).
+            Elle varie selon l'approche choisie dans le générateur de menus.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-use-target">Utiliser ce total comme objectif de mes menus →</button>
+        <p class="small-note">⚠️ Ces valeurs sont des estimations statistiques (± 10 %). Écoutez aussi vos sensations :
+          faim persistante ou fatigue durable = ajustez.</p>
+
+        <div class="card" id="planning-card">
+          <h3>📅 Mon planning calorique</h3>
+          <p class="small-note">Un objectif se travaille sur plusieurs semaines, pas sur un jour. Ce planning fait évoluer
+            vos calories progressivement, avec des semaines de pause pour durer.</p>
+          <div class="controls-row">
+            <div class="control">
+              <label for="plan-type">Objectif</label>
+              <select id="plan-type">
+                <option value="seche">🏋️ Sèche sportive</option>
+                <option value="perte" selected>⚖️ Perte de poids</option>
+                <option value="prise">📈 Prise de masse</option>
+                <option value="maintien">🎯 Maintien</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="plan-duree">Durée</label>
+              <select id="plan-duree">
+                <option value="4">4 semaines</option>
+                <option value="8" selected>8 semaines</option>
+                <option value="12">12 semaines</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="btn-planning">Créer le planning</button>
+          </div>
+          <div id="planning-output"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MENUS ================= -->
+  <section class="page" id="page-menus">
+    <h1 class="page-title">Mes menus</h1>
+    <div class="subtabs" id="menus-subtabs">
+      <button class="subtab active" data-subtab="generateur">🎲 Générateur</button>
+      <button class="subtab" data-subtab="editeur">✏️ Éditeur manuel</button>
+      <button class="subtab" data-subtab="enregistres">📁 Mes menus enregistrés</button>
+    </div>
+
+    <!-- Générateur -->
+    <div class="subpanel active" id="panel-generateur">
+      <div class="card controls-card">
+        <div class="controls-row">
+          <div class="control">
+            <label for="gen-approche">Approche</label>
+            <select id="gen-approche"></select>
+          </div>
+          <div class="control">
+            <label for="gen-duree">Durée</label>
+            <select id="gen-duree">
+              <option value="1">1 jour</option>
+              <option value="7">1 semaine</option>
+              <option value="14">2 semaines</option>
+              <option value="28">1 mois (4 semaines)</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="gen-kcal">Objectif calories / jour</label>
+            <input type="number" id="gen-kcal" min="1200" max="4500" step="50" value="2000">
+          </div>
+          <div class="control">
+            <label for="gen-date">Commencer le <span class="label-opt">(optionnel)</span></label>
+            <input type="date" id="gen-date">
+          </div>
+          <button class="btn btn-primary" id="btn-generer">🎲 Générer</button>
+        </div>
+        <div class="regimes-row">
+          <span class="regimes-label">Régimes particuliers :</span>
+          <label class="check-pill"><input type="checkbox" id="reg-vegetarien"> 🌱 Végétarien</label>
+          <label class="check-pill"><input type="checkbox" id="reg-sansgluten"> 🌾 Sans gluten</label>
+          <label class="check-pill"><input type="checkbox" id="reg-sanslactose"> 🥛 Sans lactose</label>
+        </div>
+        <div class="regimes-row">
+          <span class="regimes-label">Éco-responsable :</span>
+          <label class="check-pill"><input type="checkbox" id="reg-saison"> 🍓 Fruits &amp; légumes de saison</label>
+          <span class="small-note" style="margin:0">Selon la date de début choisie (ou le mois en cours).</span>
+        </div>
+        <div class="regimes-row">
+          <span class="regimes-label">Variété :</span>
+          <label class="check-pill"><input type="checkbox" id="reg-variete" checked> 🔁 Limiter les répétitions</label>
+          <span class="small-note" style="margin:0">Une même recette ne revient dans la semaine que si l'approche n'offre pas assez de choix.</span>
+        </div>
+        <p class="small-note">Faible en glucides ? Choisissez l'approche « Low carb ». Les repas incompatibles avec un régime
+          coché sont adaptés automatiquement (pâtes → riz, beurre → huile d'olive…) ou remplacés.</p>
+        <p class="approche-hint" id="gen-approche-hint"></p>
+      </div>
+      <div id="gen-output"></div>
+    </div>
+
+    <!-- Éditeur -->
+    <div class="subpanel" id="panel-editeur">
+      <div class="card controls-card">
+        <div class="controls-row">
+          <div class="control">
+            <label for="edit-duree">Durée</label>
+            <select id="edit-duree">
+              <option value="1">1 jour</option>
+              <option value="7">1 semaine</option>
+              <option value="14">2 semaines</option>
+              <option value="28">1 mois (4 semaines)</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="edit-kcal">Objectif calories / jour</label>
+            <input type="number" id="edit-kcal" min="1200" max="4500" step="50" value="2000">
+          </div>
+          <div class="control grow">
+            <label for="edit-nom">Nom du menu</label>
+            <input type="text" id="edit-nom" placeholder="Ex. Ma semaine type" maxlength="60">
+          </div>
+          <button class="btn btn-primary" id="btn-save-menu">💾 Enregistrer</button>
+          <button class="btn btn-ghost" id="btn-liste-editor">🛒 Liste de courses</button>
+          <button class="btn btn-ghost" id="btn-print-menu">🖨️ Imprimer</button>
+          <button class="btn btn-danger-ghost" id="btn-clear-menu">Vider</button>
+        </div>
+      </div>
+      <div class="day-tabs" id="edit-day-tabs"></div>
+      <div id="edit-day-content"></div>
+      <div class="card" id="edit-week-summary" style="display:none"></div>
+    </div>
+
+    <!-- Enregistrés -->
+    <div class="subpanel" id="panel-enregistres">
+      <div id="saved-list"></div>
+    </div>
+  </section>
+
+  <!-- ================= ALIMENTS ================= -->
+  <section class="page" id="page-aliments">
+    <h1 class="page-title">Base d'aliments</h1>
+    <p class="section-intro">Valeurs nutritionnelles moyennes <strong>pour 100 g</strong> (ordres de grandeur inspirés
+      de la table Ciqual). Utilisez la recherche ou filtrez par famille.</p>
+    <div class="card controls-card">
+      <div class="controls-row">
+        <div class="control grow">
+          <label for="alim-search">Rechercher</label>
+          <input type="search" id="alim-search" placeholder="Ex. saumon, lentilles, pomme…">
+        </div>
+        <div class="control">
+          <label for="alim-cat">Famille</label>
+          <select id="alim-cat"><option value="">Toutes</option></select>
+        </div>
+      </div>
+      <div class="regimes-row">
+        <span class="regimes-label">Convient aux régimes :</span>
+        <label class="check-pill"><input type="checkbox" id="alim-vegetarien"> 🌱 Végétarien</label>
+        <label class="check-pill"><input type="checkbox" id="alim-sansgluten"> 🌾 Sans gluten</label>
+        <label class="check-pill"><input type="checkbox" id="alim-sanslactose"> 🥛 Sans lactose</label>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="alim-table" id="alim-table">
+        <thead>
+          <tr><th>Aliment</th><th>Famille</th><th class="num">kcal</th><th class="num">Protéines</th><th class="num">Glucides</th><th class="num">Lipides</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="small-note" id="alim-count"></p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p><strong>NutriGuide</strong> — site pédagogique. Les informations fournies ne constituent pas un avis médical.
+    Valeurs nutritionnelles moyennes, données à titre indicatif.</p>
+</footer>
+
+<!-- Modale liste de courses -->
+<div class="modal-overlay" id="liste-modal" hidden>
+  <div class="modal" role="dialog" aria-labelledby="liste-title">
+    <div class="modal-head">
+      <h2 id="liste-title">🛒 Liste de courses</h2>
+      <button class="modal-close" id="liste-close" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body" id="liste-content"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" id="liste-copy">📋 Copier</button>
+      <button class="btn btn-ghost btn-sm" id="liste-txt">⬇️ Fichier texte</button>
+      <button class="btn btn-ghost btn-sm" id="liste-json" title="Format structuré compatible avec l'app fooding">⬇️ JSON (fooding)</button>
+      <button class="btn btn-ghost btn-sm" id="liste-print">🖨️ Imprimer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<datalist id="foods-datalist"></datalist>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
