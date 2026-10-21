@@ -275,7 +275,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
 .food-row input.food-grams {
   width: 74px; padding: 4px 8px; border: 1.5px solid var(--line); border-radius: 8px; text-align: right;
 }
-.food-row .food-kcal { width: 80px; text-align: right; color: var(--ink-soft); }
+.food-row .food-kcal { min-width: 80px; text-align: right; color: var(--ink-soft); white-space: nowrap; }
 .food-row .food-del {
   border: none; background: none; color: var(--red); cursor: pointer; font-size: 1rem;
   padding: 2px 6px; border-radius: 6px;
@@ -311,7 +311,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
 }
 .alim-table td { padding: 9px 14px; border-top: 1px solid var(--line); }
 .alim-table tr:hover td { background: var(--green-50); }
-.alim-table .num { text-align: right; }
+.alim-table .num { text-align: right; white-space: nowrap; }
 .alim-table td.cat-cell { color: var(--ink-soft); font-size: .85rem; }
 
 /* ---------- Multi-semaines & planning ---------- */
@@ -418,6 +418,179 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* =====================================================
+   Mon suivi — lipides / glucides / sel
+   ===================================================== */
+:root {
+  --sel: #4b6584;
+  --ok: #2f9d69;
+  --warn: #d98f27;
+  --over: #c0392b;
+  --ok-bg: #e3f3ea;
+  --warn-bg: #fdf0e0;
+  --over-bg: #fbe7e4;
+}
+.nav-btn-key { font-weight: 600; color: var(--green-700); }
+.sv-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.sv-top .page-title { margin-bottom: 0; }
+.sv-date-label { color: var(--ink-soft); font-size: .95rem; text-transform: none; }
+.sv-date-label::first-letter { text-transform: uppercase; }
+.sv-datenav { display: flex; gap: 6px; align-items: center; }
+.sv-datenav input { padding: 6px 10px; border: 1.5px solid var(--line); border-radius: 10px; font: inherit; font-size: .92rem; }
+.sv-datenav .btn:disabled { opacity: .35; cursor: default; }
+
+/* Jauges */
+.sv-gauges { display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.gauge-pair { display: flex; flex-direction: column; gap: 8px; }
+.gauge {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 14px; box-shadow: var(--shadow); border-left: 5px solid var(--ok);
+}
+.gauge.warn { border-left-color: var(--warn); }
+.gauge.over { border-left-color: var(--over); background: var(--over-bg); }
+.gauge.sub { padding: 8px 14px; box-shadow: none; }
+.gauge.big { display: flex; flex-direction: column; justify-content: center; }
+.gauge.big .gauge-val strong { font-size: 2rem; }
+.gauge.big .gauge-name { font-size: 1.05rem; }
+.gauge-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.gauge-name { font-weight: 700; font-size: .92rem; }
+.gauge.sub .gauge-name { font-weight: 600; font-size: .84rem; color: var(--ink-soft); }
+.gauge-val { font-size: .88rem; color: var(--ink-soft); white-space: nowrap; }
+.gauge-val strong { color: var(--ink); font-size: 1.15rem; }
+.gauge-track { height: 9px; background: var(--green-50); border-radius: 999px; overflow: hidden; margin: 6px 0 4px; }
+.gauge.sub .gauge-track { height: 6px; }
+.gauge-bar { height: 100%; background: var(--ok); border-radius: 999px; transition: width .35s ease; }
+.gauge.warn .gauge-bar { background: var(--warn); }
+.gauge.over .gauge-bar { background: var(--over); }
+.gauge-msg { font-size: .8rem; color: var(--ink-soft); }
+.gauge.over .gauge-msg { color: var(--over); }
+.kcal-gauge { border-left-color: var(--green-600); }
+
+/* Mise en page */
+.sv-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+.sv-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 76px; }
+.sv-side h3 { font-size: 1rem; margin-bottom: 8px; }
+
+/* Ajout */
+.sv-add { margin-bottom: 16px; border: 1.5px solid var(--green-500); }
+.sv-add h3 { font-size: 1.02rem; margin-bottom: 10px; }
+.sv-add-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.sv-qty-row { display: flex; gap: 6px; }
+.sv-qty-row input { width: 90px !important; }
+.sv-qty-row select { width: auto !important; }
+.sv-preview { margin-top: 10px; font-size: .9rem; min-height: 1.4em; }
+.sv-preview-line { color: var(--ink); }
+.sv-preview-after { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: .85rem; color: var(--ink-soft); }
+.sv-warn { margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: var(--warn-bg); color: #8a5300; font-size: .88rem; }
+.sv-quick, .sv-recents { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
+.sv-quick .link-btn { margin: 0 0 0 auto; font-size: .88rem; }
+.chip-btn {
+  border: 1.5px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 12px;
+  font-size: .84rem; cursor: pointer; color: var(--ink); font-family: inherit; transition: all .15s;
+}
+.chip-btn:hover { border-color: var(--green-500); background: var(--green-50); }
+.chip-btn.active { background: var(--green-600); border-color: var(--green-600); color: #fff; }
+
+/* Repas du journal */
+.sv-meal { margin-bottom: 12px; }
+.sv-meal .day-head { gap: 10px; }
+.sv-meal .day-head h3 { font-size: 1rem; }
+.sv-meal-tot { margin-left: auto; font-size: .84rem; color: var(--ink-soft); font-weight: 600; }
+.sv-meal .day-head .link-btn { margin: 0; font-size: .86rem; }
+.sv-meal .day-body { padding: 6px 14px 10px; }
+.sv-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; font-size: .9rem; }
+.sv-row:nth-child(odd) { background: var(--green-50); }
+.sv-row.heavy { background: var(--warn-bg); }
+.sv-row-name { flex: 1; min-width: 140px; }
+.sv-heavy { font-size: .8rem; }
+.sv-row-qty { white-space: nowrap; color: var(--ink-soft); font-size: .85rem; }
+.sv-row-qty input { width: 68px; padding: 3px 6px; border: 1.5px solid var(--line); border-radius: 8px; text-align: right; font: inherit; }
+.sv-unit-hint { font-size: .78rem; margin-left: 4px; }
+.sv-row-vals { display: flex; gap: 10px; font-size: .8rem; color: var(--ink-soft); white-space: nowrap; }
+.sv-row-vals .v-sel { color: var(--sel); font-weight: 600; min-width: 74px; text-align: right; }
+.sv-row-vals .v-l { min-width: 62px; text-align: right; }
+.sv-row-vals .v-g { min-width: 70px; text-align: right; }
+.sv-row-vals .v-kcal { min-width: 58px; text-align: right; }
+.sv-day-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+/* Encarts latéraux */
+.sv-tip { background: var(--green-50); border-left: 4px solid var(--warn); border-radius: 8px; padding: 10px 12px; font-size: .86rem; margin-bottom: 12px; }
+.sv-tops .liste-group { margin-bottom: 8px; }
+.sv-tops .liste-group li { font-size: .86rem; }
+.wk-row { display: grid; grid-template-columns: 112px 1fr; gap: 8px; align-items: end; margin: 10px 0 4px; }
+.wk-label { font-size: .84rem; font-weight: 600; }
+.wk-label span { display: block; font-weight: 400; font-size: .74rem; color: var(--ink-soft); }
+.wk-chart { position: relative; display: flex; gap: 4px; height: 70px; align-items: flex-end; border-bottom: 1px solid var(--line); }
+.wk-limit { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--over); pointer-events: none; }
+.wk-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; border: none; background: none; cursor: pointer; padding: 0; position: relative; }
+.wk-bar { display: block; border-radius: 4px 4px 0 0; background: var(--ok); min-height: 2px; }
+.wk-bar.warn { background: var(--warn); }
+.wk-bar.over { background: var(--over); }
+.wk-bar.empty { background: var(--line); }
+.wk-day { position: absolute; bottom: -18px; left: 0; right: 0; text-align: center; font-size: .7rem; color: var(--ink-soft); text-transform: uppercase; }
+.wk-col.current .wk-day { color: var(--green-700); font-weight: 700; }
+.wk-col.current .wk-bar { outline: 2px solid var(--green-700); outline-offset: 1px; }
+#sv-week .small-note { margin-top: 24px; }
+.sv-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.sv-limits-form { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.sv-lim-field { display: flex; align-items: center; gap: 8px; font-size: .88rem; }
+.sv-lim-field span { flex: 1; font-weight: 600; }
+.sv-lim-field input { width: 82px; padding: 5px 8px; border: 1.5px solid var(--line); border-radius: 8px; text-align: right; font: inherit; }
+.sv-data-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.sv-data-actions label.btn { display: inline-block; }
+
+/* Pastilles limites (cartes menus, aperçu, accueil) */
+.limits-line { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.lim-chip { font-size: .78rem; padding: 2px 9px; border-radius: 999px; background: var(--ok-bg); color: var(--green-700); white-space: nowrap; }
+.lim-chip.warn { background: var(--warn-bg); color: #8a5300; }
+.lim-chip.over { background: var(--over-bg); color: var(--over); }
+.home-today { margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; }
+.home-today .limits-line { margin-top: 0; justify-content: center; }
+.step-key { border: 1.5px solid var(--green-500); }
+
+/* Base d'aliments : tri et feux */
+.alim-table th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+.alim-table th[data-sort]:hover { color: var(--green-600); }
+.alim-table th.sorted::after { content: " " attr(data-dir); }
+.alim-table th.sub, .alim-table td.sub { color: var(--ink-soft); font-size: .85rem; }
+.alim-table { min-width: 860px; }
+.feu { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.feu-vert { background: var(--ok); }
+.feu-orange { background: var(--warn); }
+.feu-rouge { background: var(--over); }
+.perso-tag { font-size: .7rem; background: var(--green-100); color: var(--green-700); border-radius: 999px; padding: 1px 7px; font-weight: 600; }
+.perso-del { border: none; background: none; cursor: pointer; font-size: .9rem; opacity: .6; }
+.perso-del:hover { opacity: 1; }
+
+/* Formulaire étiquette */
+.food-form .form-row { margin-bottom: 10px; }
+.ff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+
+@media (max-width: 1000px) {
+  .sv-layout { grid-template-columns: 1fr; }
+  .sv-side { position: static; }
+  .sv-gauges { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .sv-gauges { grid-template-columns: 1fr; }
+  .sv-top { align-items: stretch; }
+  .sv-datenav { justify-content: space-between; }
+  .sv-datenav input { flex: 1; min-width: 0; }
+  .sv-add-row { flex-direction: column; align-items: stretch; }
+  .sv-qty-row input { flex: 1; width: auto !important; }
+  .sv-quick .link-btn { margin-left: 0; }
+  .sv-row { flex-wrap: wrap; row-gap: 2px; }
+  .sv-row-name { flex: 1 1 calc(100% - 40px); }
+  .sv-row-vals { flex: 1 1 100%; justify-content: flex-start; gap: 8px; }
+  .sv-row-vals span { min-width: 0 !important; text-align: left !important; }
+  .sv-meal-tot { flex: 1 1 100%; order: 3; margin-left: 0; }
+  .ff-grid { grid-template-columns: 1fr; }
+}
+@media print {
+  .sv-add, .sv-day-actions, .sv-side, .sv-datenav, .sv-del { display: none !important; }
+  .sv-layout { display: block; }
+}
+
 /* ---------- Responsive / mobile ---------- */
 @media (max-width: 900px) {
   .header-inner { padding: 8px 12px; }
@@ -500,4 +673,243 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
   body.has-modal .modal { max-height: none; box-shadow: none; width: 100%; }
   body.has-modal .modal-actions, body.has-modal .modal-close { display: none !important; }
   .liste-group { break-inside: avoid; }
+}
+
+/* =====================================================
+   Smartphone & application installée
+   ===================================================== */
+.install-btn { margin-left: auto; }
+.bottom-nav, .fab, .sv-sheet-close, .sv-sticky { display: none; }
+.sv-add-head { display: flex; align-items: center; justify-content: space-between; }
+.sv-add-head h3 { margin-bottom: 10px; }
+
+/* Recherche d'aliment */
+.sv-ac-wrap { position: relative; }
+.sv-ac-wrap input[type="search"]::-webkit-search-cancel-button { cursor: pointer; }
+.sv-ac {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+  background: #fff; border: 1.5px solid var(--green-500); border-radius: 12px;
+  box-shadow: var(--shadow-hover); overflow: hidden; max-height: 320px; overflow-y: auto;
+}
+.sv-ac[hidden] { display: none; }
+.sv-ac-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%;
+  border: none; background: #fff; padding: 9px 12px; text-align: left; cursor: pointer;
+  font-family: inherit; border-bottom: 1px solid var(--line);
+}
+.sv-ac-item:last-child { border-bottom: none; }
+.sv-ac-item:hover, .sv-ac-item.active { background: var(--green-50); }
+.sv-ac-nom { font-size: .95rem; color: var(--ink); font-weight: 600; }
+.sv-ac-meta { font-size: .78rem; color: var(--ink-soft); }
+.sv-ac-meta em { font-style: normal; opacity: .7; }
+
+/* Bandeau mise à jour / installation */
+.app-banner {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; z-index: 120;
+  width: min(560px, calc(100% - 24px)); background: var(--ink); color: #fff;
+  border-radius: 14px; padding: 10px 12px 10px 16px; box-shadow: var(--shadow-hover);
+  display: flex; align-items: center; gap: 10px; font-size: .92rem;
+}
+.app-banner[hidden] { display: none; }
+.app-banner span { flex: 1; }
+.app-banner .modal-close { color: #fff; }
+.app-banner .modal-close:hover { background: rgba(255,255,255,.12); color: #fff; }
+.ios-share { display: inline-block; border: 1.5px solid #fff; border-radius: 5px; padding: 0 5px; font-size: .8rem; }
+
+/* Panneaux repliables (activés sur téléphone) */
+.collapsible.collapsed > :not(h3) { display: none !important; }
+
+@media (max-width: 760px) {
+  /* --- Cadre de l'app --- */
+  html { -webkit-text-size-adjust: 100%; }
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); -webkit-tap-highlight-color: transparent; }
+  .site-header { padding-top: env(safe-area-inset-top); }
+  .header-inner { padding: 8px 14px; flex-wrap: nowrap; }
+  .site-header .main-nav { display: none; }
+  .logo { font-size: 1.12rem; }
+  main { padding: 14px 12px 28px; }
+  .site-footer { padding: 16px 16px 20px; font-size: .78rem; }
+  .standalone .site-footer { display: none; }
+
+  /* Champs : 16 px minimum pour éviter le zoom automatique d'iOS */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* --- Barre d'onglets en bas --- */
+  .bottom-nav {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    background: rgba(255, 255, 255, .97); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line); padding: 4px 4px env(safe-area-inset-bottom);
+  }
+  .bottom-nav .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0;
+    padding: 6px 2px 5px; border-radius: 12px; background: none; color: var(--ink-soft);
+    font-size: .7rem; font-weight: 600; min-height: 52px; justify-content: center;
+  }
+  .bottom-nav .nav-btn .bn-ico { font-size: 1.25rem; line-height: 1.2; filter: grayscale(.6); opacity: .8; }
+  .bottom-nav .nav-btn.active { color: var(--green-700); background: var(--green-100); }
+  .bottom-nav .nav-btn.active .bn-ico { filter: none; opacity: 1; }
+  .toast { bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .app-banner { bottom: calc(72px + env(safe-area-inset-bottom)); }
+
+  /* --- Bouton + (page Suivi uniquement) --- */
+  body:has(#page-suivi.active) .fab {
+    display: flex; position: fixed; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 65;
+    width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--green-600); color: #fff; font-size: 2rem; line-height: 1;
+    align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(30, 107, 71, .4);
+  }
+  body.sheet-open .fab { display: none !important; }
+
+  /* --- Suivi : en-tête et jauges compactes --- */
+  .sv-top { margin-bottom: 10px; gap: 8px; }
+  .sv-top .page-title { font-size: 1.3rem; }
+  .sv-date-label { font-size: .85rem; }
+  .sv-datenav .btn-sm { padding: 6px 12px; }
+  .sv-gauges { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .sv-gauges > .gauge.big { grid-column: 1 / -1; }
+  .sv-gauges > .kcal-gauge { grid-column: 1 / -1; padding: 8px 12px; }
+  .gauge { padding: 9px 10px; border-left-width: 4px; }
+  .gauge.sub { padding: 6px 10px; }
+  .gauge-pair { gap: 6px; }
+  .gauge-name { font-size: .82rem; }
+  .gauge-val { font-size: .78rem; }
+  .gauge-val strong { font-size: 1rem; }
+  .gauge.big .gauge-val strong { font-size: 1.7rem; }
+  .gauge-msg { font-size: .74rem; }
+  .gauge-head { gap: 2px; }
+
+  /* Bandeau collant quand les jauges sont hors écran */
+  .sv-sticky {
+    display: flex; gap: 8px; position: fixed; left: 0; right: 0; z-index: 45;
+    top: var(--header-h, 49px); padding: 6px 12px 7px;
+    background: rgba(251, 250, 247, .97); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+    transform: translateY(-120%); transition: transform .2s ease; pointer-events: none;
+  }
+  body.gauges-hidden:has(#page-suivi.active) .sv-sticky { transform: none; }
+  .ss-item { flex: 1; min-width: 0; }
+  .ss-lbl { display: block; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+  .ss-lbl small { font-weight: 400; color: var(--ink-soft); }
+  .ss-track { display: block; height: 5px; border-radius: 999px; background: var(--green-50); overflow: hidden; margin-top: 2px; }
+  .ss-bar { display: block; height: 100%; background: var(--ok); }
+  .ss-item.warn .ss-bar { background: var(--warn); }
+  .ss-item.over .ss-bar { background: var(--over); }
+  .ss-item.over .ss-lbl { color: var(--over); }
+
+  /* --- Feuille d'ajout --- */
+  .sv-add {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; margin: 0;
+    border-radius: 20px 20px 0 0; border: none; box-shadow: 0 -8px 30px rgba(25, 40, 32, .25);
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+    max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain;
+    transform: translateY(105%); transition: transform .25s ease; visibility: hidden;
+  }
+  .sv-add::before {
+    content: ""; display: block; width: 40px; height: 4px; border-radius: 999px;
+    background: var(--line); margin: -4px auto 8px;
+  }
+  body.sheet-open .sv-add { transform: none; visibility: visible; }
+  body.sheet-open { overflow: hidden; }
+  .sheet-backdrop { position: fixed; inset: 0; z-index: 75; background: rgba(25, 40, 32, .4); }
+  .sheet-backdrop[hidden] { display: none; }
+  .sv-sheet-close { display: block; }
+  .sv-add-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .sv-add-row .control { min-width: 0; }
+  .sv-add-row .btn { padding: 13px; font-size: 1.02rem; }
+  .sv-qty-row input { flex: 1; width: auto !important; }
+  .sv-qty-row select { flex: 1; }
+  .sv-ac { max-height: 42dvh; }
+  .sv-ac-item { padding: 11px 12px; }
+  .chip-btn { padding: 7px 12px; font-size: .86rem; }
+  .sv-quick, .sv-recents { gap: 6px; }
+  .sv-recents { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .sv-recents::-webkit-scrollbar { display: none; }
+  .sv-recents .chip-btn, .sv-recents .regimes-label { flex: 0 0 auto; white-space: nowrap; }
+  .sv-quick .link-btn { flex: 1 1 100%; text-align: left; }
+
+  /* --- Repas --- */
+  .sv-meal .day-head { padding: 10px 12px; flex-wrap: wrap; }
+  .sv-meal .day-head .link-btn { padding: 6px 10px; border-radius: 999px; background: var(--green-100); margin-left: auto; }
+  .sv-meal-tot { order: 3; flex: 1 1 100%; margin-left: 0; font-size: .76rem; }
+  .sv-meal .day-body { padding: 4px 8px 8px; }
+  .sv-row { padding: 8px 6px; gap: 6px; }
+  .sv-row-qty input { width: 64px; padding: 5px 6px; }
+  .sv-del { padding: 6px 10px !important; font-size: 1.05rem !important; }
+  .sv-day-actions .btn { flex: 1 1 100%; padding: 10px; }
+
+  /* Panneaux latéraux */
+  .sv-side { gap: 12px; }
+  .collapsible > h3 { cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
+  .collapsible > h3::after { content: "▾"; color: var(--ink-soft); transition: transform .2s; }
+  .collapsible.collapsed > h3::after { transform: rotate(-90deg); }
+  .collapsible:not(.collapsed) > h3 { margin-bottom: 8px; }
+  .sv-lim-field input { width: 90px; }
+
+  /* --- Base d'aliments en fiches --- */
+  .table-wrap { border: none; box-shadow: none; background: none; overflow: visible; }
+  .alim-table { min-width: 0; font-size: .88rem; }
+  .alim-table thead tr { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 8px; scrollbar-width: none; }
+  .alim-table thead tr::-webkit-scrollbar { display: none; }
+  .alim-table th {
+    position: static; flex: 0 0 auto; padding: 6px 12px; border-radius: 999px; background: #fff;
+    border: 1.5px solid var(--line); font-size: .72rem; text-align: center !important;
+  }
+  .alim-table th.sorted { background: var(--green-600); color: #fff; border-color: var(--green-600); }
+  .alim-table tbody { display: flex; flex-direction: column; gap: 8px; }
+  .alim-table tbody tr {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px 8px;
+    background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+  }
+  .alim-table td { border: none; padding: 0; text-align: left !important; font-size: .82rem; }
+  .alim-table tr:hover td { background: none; }
+  .alim-table td.td-nom { grid-column: 1 / 4; font-weight: 600; font-size: .95rem; }
+  .alim-table td.cat-cell { display: none; }
+  .alim-table td.td-sel { grid-column: 4; grid-row: 1; text-align: right !important; font-size: .9rem; }
+  .alim-table td[data-label]::before { content: attr(data-label) " "; color: var(--ink-soft); font-size: .72rem; display: block; }
+  #alim-new-food { margin-left: 0 !important; width: 100%; }
+
+  /* Modales en plein bas d'écran au-dessus de la barre d'onglets */
+  .modal-overlay { z-index: 90; }
+}
+
+/* App installée : pas de barre d'adresse, on gagne la place du pied de page */
+@media (display-mode: standalone) {
+  .install-btn { display: none !important; }
+  body { overscroll-behavior-y: none; }
+}
+
+/* Bouton de suppression des lignes du suivi (toutes tailles) */
+.sv-row .food-del {
+  border: none; background: none; color: var(--red); cursor: pointer; font-size: 1rem;
+  padding: 2px 6px; border-radius: 6px;
+}
+.sv-row .food-del:hover { background: #fdf0ee; }
+
+@media (max-width: 760px) {
+  /* Ligne du journal sur 2 lignes : nom + ✕ / quantité + valeurs */
+  .sv-row {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+    grid-template-areas: "name name del" "qty vals vals"; gap: 2px 10px;
+  }
+  .sv-row-name { grid-area: name; min-width: 0; flex: none !important; font-weight: 600; }
+  .sv-row .sv-del { grid-area: del; }
+  .sv-row-qty { grid-area: qty; }
+  .sv-row-vals {
+    grid-area: vals; flex-wrap: wrap; gap: 2px 8px !important; justify-content: flex-end !important;
+    font-size: .74rem; white-space: normal;
+  }
+  .sv-unit-hint { display: block; margin: 0; font-size: .7rem; }
+  /* Tableau des aliments : bloc, pas de débordement horizontal */
+  .alim-table, .alim-table thead, .alim-table tbody { display: block; width: 100%; }
+}
+@media (max-width: 760px) {
+  #page-aliments .section-intro { display: none; }
+  #page-aliments .controls-card { padding: 12px; margin-bottom: 12px; }
+  #page-aliments .controls-row { flex-direction: row; flex-wrap: nowrap; gap: 8px; }
+  #page-aliments .control.grow { flex: 2; min-width: 0; }
+  #page-aliments .control { flex: 1; min-width: 0; }
+  #page-aliments .regimes-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 10px; padding-bottom: 2px; }
+  #page-aliments .regimes-row::-webkit-scrollbar { display: none; }
+  #page-aliments .check-pill, #page-aliments .regimes-label { flex: 0 0 auto; white-space: nowrap; }
+  #alim-new-food { flex: 0 0 auto; width: auto !important; }
+  .alim-table th[data-sort="cat"] { display: none; }
 }

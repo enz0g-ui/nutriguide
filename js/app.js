@@ -6,8 +6,28 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-const ALIMENTS_MAP = Object.fromEntries(ALIMENTS.map(a => [a.id, a]));
-const ALIMENTS_BY_NAME = Object.fromEntries(ALIMENTS.map(a => [a.nom.toLowerCase(), a]));
+/* Aliments personnels (saisis depuis une étiquette) : chargés avant les index */
+function loadCustomFoods() {
+  try { return JSON.parse(localStorage.getItem("nutriguide_custom_foods") || "[]"); } catch { return []; }
+}
+loadCustomFoods().forEach(a => {
+  if (!ALIMENTS.some(x => x.id === a.id)) ALIMENTS.push(a);
+  if (a.portion && a.portion.g > 0) UNITES[a.id] = { g: a.portion.g, l: a.portion.l || "portion" };
+});
+let ALIMENTS_MAP = {};
+let ALIMENTS_BY_NAME = {};
+function rebuildFoodIndex() {
+  ALIMENTS_MAP = Object.fromEntries(ALIMENTS.map(a => [a.id, a]));
+  ALIMENTS_BY_NAME = Object.fromEntries(ALIMENTS.map(a => [a.nom.toLowerCase(), a]));
+  const dl = document.getElementById("foods-datalist");
+  if (dl) dl.innerHTML = ALIMENTS
+    .slice().sort((a, b) => a.nom.localeCompare(b.nom, "fr"))
+    .map(a => `<option value="${escapeHtml(a.nom)}"></option>`).join("");
+}
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+rebuildFoodIndex();
 
 const MEAL_TYPES = [
   ["pdej", "Petit-déjeuner"],
@@ -55,18 +75,79 @@ function setTarget(v) {
 }
 
 /* ---------- Calculs nutritionnels ---------- */
+const NUTRI_KEYS = ["kcal", "p", "g", "l", "sel", "ags", "suc"];
+function zeroNutrition() { return { kcal: 0, p: 0, g: 0, l: 0, sel: 0, ags: 0, suc: 0 }; }
 function itemNutrition(item) {
   const a = ALIMENTS_MAP[item.id];
-  if (!a) return { kcal: 0, p: 0, g: 0, l: 0 };
+  if (!a) return zeroNutrition();
   const f = item.g / 100;
-  return { kcal: a.kcal * f, p: a.p * f, g: a.g * f, l: a.l * f };
+  const n = {};
+  NUTRI_KEYS.forEach(k => { n[k] = (a[k] || 0) * f; });
+  return n;
 }
 function sumNutrition(items) {
   return items.reduce((acc, it) => {
     const n = itemNutrition(it);
-    acc.kcal += n.kcal; acc.p += n.p; acc.g += n.g; acc.l += n.l;
+    NUTRI_KEYS.forEach(k => { acc[k] += n[k]; });
     return acc;
-  }, { kcal: 0, p: 0, g: 0, l: 0 });
+  }, zeroNutrition());
+}
+
+/* ---------- Objectifs du régime : limites lipides / glucides / sel ----------
+   Stockées en grammes. Les préréglages se recalculent à partir des calories. */
+const LIMITE_PRESETS = {
+  anses: { nom: "Repères ANSES / OMS", lPct: 0.35, agsPct: 0.12, gPct: 0.50, suc: 100, sel: 5,
+    info: "Lipides ≤ 35 % des calories, saturés ≤ 12 %, glucides ~50 %, sucres totaux ≤ 100 g, sel ≤ 5 g (OMS)." },
+  allege: { nom: "Allégé lipides & sel", lPct: 0.30, agsPct: 0.10, gPct: 0.50, suc: 75, sel: 4,
+    info: "Version plus stricte : lipides ≤ 30 %, saturés ≤ 10 %, sucres ≤ 75 g, sel ≤ 4 g." },
+  lowcarb: { nom: "Pauvre en glucides", lPct: 0.45, agsPct: 0.12, gFix: 100, suc: 40, sel: 5,
+    info: "Glucides ≤ 100 g/jour, sucres ≤ 40 g ; les lipides montent à ~45 % des calories." }
+};
+const LIMITE_LABELS = {
+  sel: { nom: "Sel", emoji: "🧂", dec: 1 },
+  l: { nom: "Lipides", emoji: "🫒", dec: 0 },
+  ags: { nom: "dont saturés", emoji: "🧈", dec: 0 },
+  g: { nom: "Glucides", emoji: "⚡", dec: 0 },
+  suc: { nom: "dont sucres", emoji: "🍬", dec: 0 }
+};
+function computePreset(key, kcal) {
+  const p = LIMITE_PRESETS[key];
+  return {
+    preset: key,
+    kcal,
+    l: Math.round(kcal * p.lPct / 9),
+    ags: Math.round(kcal * p.agsPct / 9),
+    g: p.gFix ? p.gFix : Math.round(kcal * p.gPct / 4),
+    suc: p.suc,
+    sel: p.sel
+  };
+}
+function getLimites() {
+  const saved = store.get("limites", null);
+  if (saved && saved.sel > 0) return saved;
+  return computePreset("anses", getTarget());
+}
+function setLimites(lim) { store.set("limites", lim); }
+/* Statut d'une valeur vs sa limite : ok (< 85 %), warn (85-100 %), over (> 100 %) */
+function limitStatus(val, lim) {
+  if (!lim) return "ok";
+  const r = val / lim;
+  return r > 1.0001 ? "over" : r >= 0.85 ? "warn" : "ok";
+}
+function fmtG(v, dec) {
+  const d = dec === undefined ? (v < 10 ? 1 : 0) : dec;
+  return v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+/* Ligne compacte « sel · lipides · glucides » colorée selon les limites — utilisée
+   dans les cartes jour du générateur et de l'éditeur. */
+function limitsLineHtml(n) {
+  const lim = getLimites();
+  return `<div class="limits-line">` + ["sel", "l", "ags", "g", "suc"].map(k => {
+    const L = LIMITE_LABELS[k];
+    const st = limitStatus(n[k], lim[k]);
+    return `<span class="lim-chip ${st}" title="${L.nom} : ${fmtG(n[k], L.dec)} g sur ${fmtG(lim[k], L.dec)} g">
+      ${L.emoji} ${L.nom} <strong>${fmtG(n[k], L.dec)}</strong>/${fmtG(lim[k], L.dec)} g</span>`;
+  }).join("") + `</div>`;
 }
 function dayNutrition(day) {
   return sumNutrition(MEAL_TYPES.flatMap(([key]) => day[key].items));
@@ -134,6 +215,9 @@ function showPage(pageId) {
   $$(".page").forEach(p => p.classList.toggle("active", p.id === "page-" + pageId));
   $$(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === pageId));
   window.scrollTo({ top: 0 });
+  store.set("last_page", pageId);
+  if (pageId === "suivi" && typeof renderSuivi === "function") renderSuivi();
+  if (pageId === "aliments" && typeof renderAliments === "function") renderAliments();
 }
 document.addEventListener("click", (e) => {
   const target = e.target.closest("[data-page]");
@@ -408,6 +492,9 @@ function setupGenerator() {
   // Variété : limite la répétition d'une même recette au sein d'une semaine
   $("#reg-variete").checked = store.get("variete", true) !== false;
   $("#reg-variete").addEventListener("change", () => store.set("variete", $("#reg-variete").checked));
+  // Limites sel / lipides / glucides du suivi
+  $("#reg-limites").checked = !!store.get("gen_limites", false);
+  $("#reg-limites").addEventListener("change", () => store.set("gen_limites", $("#reg-limites").checked));
 }
 
 /* ---------- Régimes particuliers ---------- */
@@ -487,7 +574,29 @@ function pickTemplateVaried(pool, avoidIds, weekUsed) {
    `monthOf` : null, ou fonction (indexJourGlobal) → mois 1-12, évaluée jour par
    jour pour que les longs programmes suivent les changements de saison.
    `prevIds` (partagé entre appels) évite de répéter le même repas deux jours de suite. */
+/* Écarte d'un pool les repas qui, une fois mis à l'échelle de la part calorique
+   du repas, dépasseraient sa part des limites du suivi (marge de 15 %).
+   Si plus rien ne passe, on garde les moins chargés en sel. */
+function filterPoolByLimites(pool, kcalRepas, share) {
+  const lim = getLimites();
+  const scored = pool.map(x => {
+    const items = x.adapt.items.map(([id, g]) => ({ id, g }));
+    const n = sumNutrition(items);
+    const f = n.kcal > 0 ? kcalRepas / n.kcal : 1;
+    const ratio = Math.max(
+      n.sel * f / (lim.sel * share), n.l * f / (lim.l * share),
+      n.g * f / (lim.g * share), n.suc * f / (lim.suc * share)
+    );
+    return { x, ratio };
+  });
+  const ok = scored.filter(s => s.ratio <= 1.15).map(s => s.x);
+  if (ok.length) return ok;
+  scored.sort((a, b) => a.ratio - b.ratio);
+  return scored.slice(0, Math.max(1, Math.ceil(scored.length / 4))).map(s => s.x);
+}
+
 function generateDays(appKey, target, nbDays, reg, monthOf, prevIds, dayOffset = 0, varier = true) {
+  const respectLimites = !!(document.getElementById("reg-limites") && document.getElementById("reg-limites").checked);
   const approche = APPROCHES[appKey];
   // Le jeûne 16/8 réutilise les repas « équilibre », seule la répartition change
   const poolKey = appKey === "jeune" ? "equilibre" : appKey;
@@ -515,6 +624,7 @@ function generateDays(appKey, target, nbDays, reg, monthOf, prevIds, dayOffset =
           .filter(x => x.adapt);
         if (pool.length) fallbackUsed = true;
       }
+      if (respectLimites && pool.length) pool = filterPoolByLimites(pool, target * share, share);
       const picked = varier
         ? pickTemplateVaried(pool, prevIds[type], weekUsed)
         : pickTemplate(pool, prevIds[type]);
@@ -709,7 +819,7 @@ function dayCardHtml(day, index, menu) {
   return `<div class="day-card">
     <div class="day-head"><h3>${title}</h3><span class="day-kcal">${fmtKcal(n.kcal)} kcal ${target ? `/ ${fmtKcal(target)}` : ""}</span></div>
     <div class="day-body">${meals}</div>
-    <div class="day-summary">${macroBarsHtml(n, n.kcal)}</div>
+    <div class="day-summary">${macroBarsHtml(n, n.kcal)}${limitsLineHtml(n)}</div>
   </div>`;
 }
 
@@ -765,9 +875,8 @@ function setupEditor() {
     renderEditor();
   });
 
-  // Datalist pour l'autocomplétion
-  $("#foods-datalist").innerHTML = ALIMENTS
-    .map(a => `<option value="${a.nom}"></option>`).join("");
+  // Datalist pour l'autocomplétion (partagée avec la page Suivi)
+  rebuildFoodIndex();
 }
 
 function persistEditor() { store.set("editor_menu", editorMenu); }
@@ -824,6 +933,8 @@ function renderEditor() {
         <div class="kcal-progress-track"><div class="kcal-progress ${over ? "over" : ""}" style="width:${pct.toFixed(0)}%"></div></div>
         <span class="kcal-progress-label">${over ? "⚠ Objectif dépassé de " + fmtKcal(n.kcal - target) + " kcal" : "Reste " + fmtKcal(Math.max(0, target - n.kcal)) + " kcal"}</span>
         ${macroBarsHtml(n, n.kcal)}
+        ${limitsLineHtml(n)}
+        <button class="btn btn-ghost btn-sm" id="btn-editor-to-suivi" style="margin-top:10px">📊 Reporter ce jour dans mon suivi</button>
       </div>
     </div>
   `;
@@ -845,6 +956,10 @@ function renderEditor() {
   }
 
   bindEditorEvents();
+  const toSuivi = $("#btn-editor-to-suivi");
+  if (toSuivi) toSuivi.addEventListener("click", () => {
+    if (typeof importMenuDayToJournal === "function") importMenuDayToJournal(editorMenu.days[currentDay]);
+  });
 }
 
 function editMealHtml(type, label, meal) {
@@ -854,8 +969,8 @@ function editMealHtml(type, label, meal) {
     if (!a) return "";
     return `<div class="food-row">
       <span class="food-name">${a.nom}</span>
-      <input type="number" class="food-grams" data-type="${type}" data-idx="${idx}" value="${it.g}" min="1" max="2000"> g
-      <span class="food-kcal">${fmtKcal(itemNutrition(it).kcal)} kcal</span>
+      <input type="number" class="food-grams" data-type="${type}" data-idx="${idx}" value="${it.g}" min="1" max="2000" inputmode="numeric"> g
+      <span class="food-kcal">${fmtKcal(itemNutrition(it).kcal)} kcal · ${fmtG(itemNutrition(it).sel, 1)} g sel</span>
       <button class="food-del" data-type="${type}" data-idx="${idx}" title="Retirer">✕</button>
     </div>`;
   }).join("");
@@ -868,7 +983,7 @@ function editMealHtml(type, label, meal) {
     ${rows || `<div class="empty-meal">Aucun aliment — ajoutez-en ci-dessous.</div>`}
     <div class="food-add-row">
       <input list="foods-datalist" placeholder="Rechercher un aliment…" data-type="${type}" class="food-search">
-      <input type="number" class="grams-input" placeholder="g" value="100" min="1" max="2000" data-type="${type}">
+      <input type="number" class="grams-input" placeholder="g" value="100" min="1" max="2000" data-type="${type}" inputmode="numeric">
       <button class="btn btn-primary btn-sm food-add-btn" data-type="${type}">+ Ajouter</button>
     </div>
   </div>`;
@@ -933,9 +1048,9 @@ function addFoodFromRow(type) {
 const RAYON_ORDER = [
   "Fruits", "Légumes", "Féculents", "Légumineuses", "Viandes & œufs",
   "Poissons & fruits de mer", "Produits laitiers", "Matières grasses & oléagineux",
-  "Sucré & divers", "Sauces & condiments"
+  "Plats préparés", "Sucré & divers", "Sauces & condiments", "Boissons", "Mes aliments"
 ];
-const LIQUIDES_IDS = new Set(["lait_demi", "lait_ecreme", "lait_amande", "jus_orange", "soupe_legumes"]);
+const LIQUIDES_IDS = new Set(["lait_demi", "lait_ecreme", "lait_amande", "jus_orange", "soupe_legumes", "soda", "eau_vichy", "biere", "vin"]);
 let currentListe = null;
 
 function buildShoppingList(menu) {
@@ -1174,16 +1289,39 @@ function setupSubtabs() {
 }
 
 /* ---------- Page Aliments ---------- */
-function setupAliments() {
+let alimSort = { key: "nom", dir: 1 };
+function refreshAlimCats() {
   const cats = [...new Set(ALIMENTS.map(a => a.cat))];
+  const cur = $("#alim-cat").value;
   $("#alim-cat").innerHTML = `<option value="">Toutes</option>` +
-    cats.map(c => `<option value="${c}">${c}</option>`).join("");
+    cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+  $("#alim-cat").value = cats.includes(cur) ? cur : "";
+}
+function setupAliments() {
+  refreshAlimCats();
   $("#alim-search").addEventListener("input", renderAliments);
   $("#alim-cat").addEventListener("change", renderAliments);
-  ["alim-vegetarien", "alim-sansgluten", "alim-sanslactose"].forEach(id => {
+  ["alim-vegetarien", "alim-sansgluten", "alim-sanslactose", "alim-peusel", "alim-peugras", "alim-peusucre"].forEach(id => {
     $("#" + id).addEventListener("change", renderAliments);
   });
+  $("#alim-table thead").addEventListener("click", (e) => {
+    const th = e.target.closest("th[data-sort]");
+    if (!th) return;
+    const key = th.dataset.sort;
+    alimSort = { key, dir: alimSort.key === key ? -alimSort.dir : (key === "nom" || key === "cat" ? 1 : -1) };
+    renderAliments();
+  });
+  $("#alim-table tbody").addEventListener("click", (e) => {
+    const del = e.target.closest(".perso-del");
+    if (del && typeof deleteCustomFood === "function") deleteCustomFood(del.dataset.id);
+  });
   renderAliments();
+}
+/* Pastille « feu tricolore » pour 100 g (repères des étiquettes européennes) */
+function feuHtml(k, v) {
+  const s = SEUILS_100G[k];
+  const cls = v <= s.bas ? "feu-vert" : v > s.haut ? "feu-rouge" : "feu-orange";
+  return `<span class="feu ${cls}"></span>`;
 }
 
 function renderAliments() {
@@ -1194,18 +1332,31 @@ function renderAliments() {
     sansGluten: $("#alim-sansgluten").checked,
     sansLactose: $("#alim-sanslactose").checked
   };
+  const peuSel = $("#alim-peusel").checked, peuGras = $("#alim-peugras").checked, peuSucre = $("#alim-peusucre").checked;
+  const { key, dir } = alimSort;
   const rows = ALIMENTS
     .filter(a => (!cat || a.cat === cat) && (!q || a.nom.toLowerCase().includes(q)) && foodOkForRegimes(a, reg))
-    .sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+    .filter(a => (!peuSel || a.sel <= SEUILS_100G.sel.bas) && (!peuGras || a.l <= SEUILS_100G.l.bas) && (!peuSucre || a.suc <= SEUILS_100G.suc.bas))
+    .sort((a, b) => (key === "nom" || key === "cat")
+      ? dir * String(a[key]).localeCompare(String(b[key]), "fr")
+      : dir * ((a[key] || 0) - (b[key] || 0)) || a.nom.localeCompare(b.nom, "fr"));
 
+  $$("#alim-table th[data-sort]").forEach(th => {
+    th.classList.toggle("sorted", th.dataset.sort === key);
+    th.dataset.dir = th.dataset.sort === key ? (dir > 0 ? "▲" : "▼") : "";
+  });
+  const v = (x) => (x || 0).toLocaleString("fr-FR", { maximumFractionDigits: 2 });
   $("#alim-table tbody").innerHTML = rows.map(a => `
     <tr>
-      <td>${a.nom}</td>
-      <td class="cat-cell">${a.cat}</td>
-      <td class="num"><strong>${a.kcal}</strong></td>
-      <td class="num">${a.p} g</td>
-      <td class="num">${a.g} g</td>
-      <td class="num">${a.l} g</td>
+      <td class="td-nom">${escapeHtml(a.nom)}${a.perso ? ` <span class="perso-tag">perso</span> <button class="perso-del" data-id="${a.id}" title="Supprimer cet aliment personnel">🗑</button>` : ""}</td>
+      <td class="cat-cell">${escapeHtml(a.cat)}</td>
+      <td class="num" data-label="kcal"><strong>${v(a.kcal)}</strong></td>
+      <td class="num" data-label="Prot.">${v(a.p)} g</td>
+      <td class="num" data-label="Gluc.">${v(a.g)} g</td>
+      <td class="num sub" data-label="Sucres">${feuHtml("suc", a.suc || 0)}${v(a.suc)} g</td>
+      <td class="num" data-label="Lip.">${feuHtml("l", a.l)}${v(a.l)} g</td>
+      <td class="num sub" data-label="Sat.">${feuHtml("ags", a.ags || 0)}${v(a.ags)} g</td>
+      <td class="num td-sel" data-label="Sel">${feuHtml("sel", a.sel || 0)}<strong>${v(a.sel)} g</strong></td>
     </tr>`).join("");
   $("#alim-count").textContent = `${rows.length} aliment${rows.length > 1 ? "s" : ""} affiché${rows.length > 1 ? "s" : ""} — valeurs pour 100 g.`;
 }
@@ -1231,3 +1382,4 @@ setupAliments();
 setupShoppingList();
 renderEditor();
 renderSaved();
+/* setupSuivi() est appelé par js/suivi.js (chargé juste après) */

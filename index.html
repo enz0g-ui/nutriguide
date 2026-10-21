@@ -2,19 +2,28 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NutriGuide — Comprendre et planifier son alimentation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#27865a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="NutriGuide">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <title>NutriGuide — Suivi lipides, glucides &amp; sel</title>
   <meta name="description" content="Comprendre les grandes approches nutritionnelles (chrononutrition, dissociée, méditerranéenne…), calculer ses besoins et composer ses menus, à la main ou en aléatoire.">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🥗</text></svg>">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 </head>
 <body>
 
 <header class="site-header">
   <div class="header-inner">
     <a class="logo" href="#" data-page="accueil">🥗 <span>Nutri<strong>Guide</strong></span></a>
+    <button class="btn btn-primary btn-sm install-btn" id="install-btn" hidden>📲 Installer l'app</button>
     <nav class="main-nav" id="main-nav">
       <button class="nav-btn active" data-page="accueil">Accueil</button>
+      <button class="nav-btn nav-btn-key" data-page="suivi">📊 Mon suivi</button>
       <button class="nav-btn" data-page="approches">Les approches</button>
       <button class="nav-btn" data-page="besoins">Mes besoins</button>
       <button class="nav-btn" data-page="menus">Mes menus</button>
@@ -28,13 +37,15 @@
   <!-- ================= ACCUEIL ================= -->
   <section class="page active" id="page-accueil">
     <div class="hero">
-      <h1>Bien manger, <em>sans prise de tête</em></h1>
-      <p class="hero-sub">Comprenez les grandes approches nutritionnelles, calculez vos besoins réels
-        et composez vos menus — à la main ou générés pour vous, sur un jour ou une semaine.</p>
+      <h1>Mon régime, <em>au gramme près</em></h1>
+      <p class="hero-sub">Notez ce que vous mangez et voyez en direct où vous en êtes de vos limites de
+        <strong>lipides</strong>, <strong>glucides</strong> et <strong>sel</strong> — avec ce qu'il vous reste pour la journée
+        et des idées pour alléger.</p>
       <div class="hero-actions">
-        <button class="btn btn-primary" data-page="menus">🎲 Générer un menu</button>
-        <button class="btn btn-ghost" data-page="besoins">Calculer mes besoins</button>
+        <button class="btn btn-primary" data-page="suivi">📊 Noter ce que je mange</button>
+        <button class="btn btn-ghost" data-page="menus">🎲 Générer un menu adapté</button>
       </div>
+      <div class="home-today" id="home-today"></div>
     </div>
 
     <h2 class="section-title">L'essentiel en 4 cartes</h2>
@@ -68,10 +79,23 @@
           Misez sur huile d'olive et colza, poissons gras, oléagineux ; limitez les graisses des produits
           ultra-transformés.</p>
       </div>
+      <div class="card base-card">
+        <div class="base-icon">🧂</div>
+        <h3>Le sel <span class="kcal-tag">0 kcal</span></h3>
+        <p>Repère OMS : moins de 5 g par jour, tout compris. En France, ~80 % du sel vient d'aliments déjà
+          salés — pain, charcuterie, fromage, plats préparés, sauces — et non de la salière.
+          Sur une étiquette : <em>sel = sodium × 2,5</em>.</p>
+      </div>
     </div>
 
     <h2 class="section-title">Comment utiliser ce site</h2>
     <div class="steps-grid">
+      <div class="step-card step-key"><span class="step-num">★</span>
+        <h3>Suivez votre journée</h3>
+        <p>Fixez vos limites (lipides, saturés, glucides, sucres, sel), notez chaque repas et regardez les
+          jauges : il vous reste combien de sel pour ce soir ?</p>
+        <button class="link-btn" data-page="suivi">Ouvrir mon suivi →</button>
+      </div>
       <div class="step-card"><span class="step-num">1</span>
         <h3>Explorez les approches</h3>
         <p>Chrononutrition, alimentation dissociée, méditerranéen… Chaque fiche résume le principe,
@@ -105,6 +129,101 @@
     <div class="disclaimer">
       ℹ️ Ce site est informatif et pédagogique : il ne remplace pas l'avis d'un médecin ou d'un(e) diététicien(ne),
       en particulier en cas de pathologie, de grossesse ou de trouble du comportement alimentaire.
+    </div>
+  </section>
+
+  <!-- ================= SUIVI ================= -->
+  <section class="page" id="page-suivi">
+    <div class="sv-top">
+      <div>
+        <h1 class="page-title">Mon suivi</h1>
+        <p class="sv-date-label" id="sv-date-label"></p>
+      </div>
+      <div class="sv-datenav">
+        <button class="btn btn-ghost btn-sm" id="sv-prev" title="Jour précédent">◀</button>
+        <input type="date" id="sv-date">
+        <button class="btn btn-ghost btn-sm" id="sv-next" title="Jour suivant">▶</button>
+        <button class="btn btn-ghost btn-sm" id="sv-today">Aujourd'hui</button>
+      </div>
+    </div>
+
+    <div class="sv-gauges" id="sv-gauges"></div>
+    <div class="sv-sticky" id="sv-sticky" aria-hidden="true"></div>
+
+    <div class="sv-layout">
+      <div class="sv-main">
+        <div class="card sv-add">
+          <div class="sv-add-head">
+            <h3>➕ J'ajoute</h3>
+            <button class="modal-close sv-sheet-close" id="sv-sheet-close" title="Fermer">✕</button>
+          </div>
+          <div class="sv-add-row">
+            <div class="control">
+              <label for="sv-meal">Repas</label>
+              <select id="sv-meal">
+                <option value="pdej">Petit-déjeuner</option>
+                <option value="dej">Déjeuner</option>
+                <option value="col">Collation</option>
+                <option value="diner">Dîner</option>
+              </select>
+            </div>
+            <div class="control grow">
+              <label for="sv-food">Aliment</label>
+              <div class="sv-ac-wrap">
+                <input type="search" id="sv-food" placeholder="Ex. pain, jambon, comté…" autocomplete="off" autocapitalize="off" enterkeyhint="next">
+                <div class="sv-ac" id="sv-ac" role="listbox" hidden></div>
+              </div>
+            </div>
+            <div class="control sv-qty">
+              <label for="sv-qty">Quantité</label>
+              <div class="sv-qty-row">
+                <input type="number" id="sv-qty" value="100" min="0.1" step="any" inputmode="decimal" enterkeyhint="done">
+                <select id="sv-unit"><option value="g">g</option></select>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="sv-add-btn">Ajouter</button>
+          </div>
+          <div class="sv-preview" id="sv-preview"></div>
+          <div class="sv-quick">
+            <span class="regimes-label">Sel ajouté :</span>
+            <button class="chip-btn" data-salt="0.4">🧂 1 pincée · 0,4 g</button>
+            <button class="chip-btn" data-salt="1.5">🧂 ¼ c. à café · 1,5 g</button>
+            <button class="chip-btn" data-salt="3">🧂 ½ c. à café · 3 g</button>
+            <button class="link-btn" id="sv-new-food">Aliment absent ? Le créer depuis son étiquette →</button>
+          </div>
+          <div class="sv-recents" id="sv-recents"></div>
+        </div>
+
+        <div id="sv-meals"></div>
+
+        <div class="sv-day-actions">
+          <button class="btn btn-ghost btn-sm" id="sv-copy-yesterday">📋 Recopier la veille</button>
+          <button class="btn btn-ghost btn-sm" id="sv-from-editor">✏️ Importer le jour affiché dans l'éditeur de menus</button>
+          <button class="btn btn-danger-ghost btn-sm" id="sv-clear-day">Vider la journée</button>
+        </div>
+      </div>
+
+      <aside class="sv-side">
+        <div class="card" id="sv-insights"></div>
+        <div class="card" id="sv-week"></div>
+        <div class="card" id="sv-limits-card">
+          <h3>🎯 Mes limites par jour</h3>
+          <p class="small-note" style="margin-top:0">Si votre médecin ou diététicien(ne) vous a donné des chiffres, saisissez-les :
+            ils priment sur les repères.</p>
+          <div class="sv-presets" id="sv-presets"></div>
+          <div class="sv-limits-form" id="sv-limits-form"></div>
+          <p class="small-note" id="sv-limits-info"></p>
+        </div>
+        <div class="card">
+          <h3>💾 Mes données</h3>
+          <p class="small-note" style="margin-top:0">Tout reste dans ce navigateur. Faites une sauvegarde de temps en temps.</p>
+          <div class="sv-data-actions">
+            <button class="btn btn-ghost btn-sm" id="sv-export">⬇️ Exporter</button>
+            <label class="btn btn-ghost btn-sm" for="sv-import">⬆️ Importer<input type="file" id="sv-import" accept=".json,application/json" hidden></label>
+            <button class="btn btn-ghost btn-sm" id="sv-csv">📄 CSV (30 jours)</button>
+          </div>
+        </div>
+      </aside>
     </div>
   </section>
 
@@ -257,6 +376,11 @@
           <label class="check-pill"><input type="checkbox" id="reg-variete" checked> 🔁 Limiter les répétitions</label>
           <span class="small-note" style="margin:0">Une même recette ne revient dans la semaine que si l'approche n'offre pas assez de choix.</span>
         </div>
+        <div class="regimes-row">
+          <span class="regimes-label">Mon régime :</span>
+          <label class="check-pill"><input type="checkbox" id="reg-limites"> 🧂 Respecter mes limites sel / lipides / glucides</label>
+          <button class="inline-link" data-page="suivi">régler mes limites</button>
+        </div>
         <p class="small-note">Faible en glucides ? Choisissez l'approche « Low carb ». Les repas incompatibles avec un régime
           coché sont adaptés automatiquement (pâtes → riz, beurre → huile d'olive…) ou remplacés.</p>
         <p class="approche-hint" id="gen-approche-hint"></p>
@@ -306,7 +430,9 @@
   <section class="page" id="page-aliments">
     <h1 class="page-title">Base d'aliments</h1>
     <p class="section-intro">Valeurs nutritionnelles moyennes <strong>pour 100 g</strong> (ordres de grandeur inspirés
-      de la table Ciqual). Utilisez la recherche ou filtrez par famille.</p>
+      de la table Ciqual). Cliquez sur un en-tête pour trier — par exemple sur « Sel » pour repérer les aliments les plus salés.
+      Pastilles : <span class="feu feu-vert"></span>faible · <span class="feu feu-orange"></span>moyen · <span class="feu feu-rouge"></span>élevé
+      (repères des étiquettes européennes).</p>
     <div class="card controls-card">
       <div class="controls-row">
         <div class="control grow">
@@ -324,11 +450,18 @@
         <label class="check-pill"><input type="checkbox" id="alim-sansgluten"> 🌾 Sans gluten</label>
         <label class="check-pill"><input type="checkbox" id="alim-sanslactose"> 🥛 Sans lactose</label>
       </div>
+      <div class="regimes-row">
+        <span class="regimes-label">Mon régime :</span>
+        <label class="check-pill"><input type="checkbox" id="alim-peusel"> 🧂 Pauvre en sel (≤ 0,3 g)</label>
+        <label class="check-pill"><input type="checkbox" id="alim-peugras"> 🫒 Pauvre en lipides (≤ 3 g)</label>
+        <label class="check-pill"><input type="checkbox" id="alim-peusucre"> 🍬 Pauvre en sucres (≤ 5 g)</label>
+        <button class="btn btn-primary btn-sm" id="alim-new-food" style="margin-left:auto">➕ Ajouter un aliment (étiquette)</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table class="alim-table" id="alim-table">
         <thead>
-          <tr><th>Aliment</th><th>Famille</th><th class="num">kcal</th><th class="num">Protéines</th><th class="num">Glucides</th><th class="num">Lipides</th></tr>
+          <tr><th data-sort="nom">Aliment</th><th data-sort="cat">Famille</th><th class="num" data-sort="kcal">kcal</th><th class="num" data-sort="p">Protéines</th><th class="num" data-sort="g">Glucides</th><th class="num sub" data-sort="suc">dont sucres</th><th class="num" data-sort="l">Lipides</th><th class="num sub" data-sort="ags">dont saturés</th><th class="num" data-sort="sel">Sel</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -337,6 +470,20 @@
   </section>
 
 </main>
+
+<!-- Navigation mobile (barre d'onglets en bas) -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="nav-btn" data-page="suivi"><span class="bn-ico">📊</span><span class="bn-lbl">Suivi</span></button>
+  <button class="nav-btn" data-page="menus"><span class="bn-ico">🍽️</span><span class="bn-lbl">Menus</span></button>
+  <button class="nav-btn" data-page="aliments"><span class="bn-ico">🔎</span><span class="bn-lbl">Aliments</span></button>
+  <button class="nav-btn" data-page="besoins"><span class="bn-ico">🎯</span><span class="bn-lbl">Besoins</span></button>
+  <button class="nav-btn" data-page="accueil"><span class="bn-ico">ℹ️</span><span class="bn-lbl">Infos</span></button>
+</nav>
+<button class="fab" id="sv-fab" title="Ajouter un aliment" aria-label="Ajouter un aliment">＋</button>
+<div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+
+<!-- Bandeau de mise à jour / installation -->
+<div class="app-banner" id="app-banner" hidden></div>
 
 <footer class="site-footer">
   <p><strong>NutriGuide</strong> — site pédagogique. Les informations fournies ne constituent pas un avis médical.
@@ -360,10 +507,44 @@
   </div>
 </div>
 
+<!-- Modale aliment personnel -->
+<div class="modal-overlay" id="food-modal" hidden>
+  <div class="modal" role="dialog" aria-labelledby="food-modal-title">
+    <div class="modal-head">
+      <h2 id="food-modal-title">🏷️ Nouvel aliment depuis l'étiquette</h2>
+      <button class="modal-close" id="food-modal-close" title="Fermer">✕</button>
+    </div>
+    <form class="modal-body food-form" id="food-form">
+      <p class="liste-sub">Recopiez le tableau nutritionnel <strong>pour 100 g</strong> (ou 100 ml) de l'emballage.</p>
+      <div class="form-row"><label for="ff-nom">Nom</label><input type="text" id="ff-nom" required maxlength="60" placeholder="Ex. Jambon -25 % de sel marque X"></div>
+      <div class="ff-grid">
+        <div class="form-row"><label for="ff-kcal">Énergie (kcal)</label><input type="number" id="ff-kcal" min="0" step="any" required></div>
+        <div class="form-row"><label for="ff-p">Protéines (g)</label><input type="number" id="ff-p" min="0" step="any" value="0"></div>
+        <div class="form-row"><label for="ff-l">Matières grasses (g)</label><input type="number" id="ff-l" min="0" step="any" value="0"></div>
+        <div class="form-row"><label for="ff-ags">dont acides gras saturés (g)</label><input type="number" id="ff-ags" min="0" step="any" value="0"></div>
+        <div class="form-row"><label for="ff-g">Glucides (g)</label><input type="number" id="ff-g" min="0" step="any" value="0"></div>
+        <div class="form-row"><label for="ff-suc">dont sucres (g)</label><input type="number" id="ff-suc" min="0" step="any" value="0"></div>
+        <div class="form-row"><label for="ff-sel">Sel (g)</label><input type="number" id="ff-sel" min="0" step="any" value="0"></div>
+        <div class="form-row"><label for="ff-sodium">… ou sodium (mg)</label><input type="number" id="ff-sodium" min="0" step="any" placeholder="converti en sel ×2,5"></div>
+      </div>
+      <div class="ff-grid">
+        <div class="form-row"><label for="ff-cat">Famille</label><select id="ff-cat"></select></div>
+        <div class="form-row"><label for="ff-portion">Portion habituelle (g, optionnel)</label><input type="number" id="ff-portion" min="0" step="any" placeholder="Ex. 45"></div>
+        <div class="form-row"><label for="ff-portion-l">Nom de la portion</label><input type="text" id="ff-portion-l" maxlength="20" placeholder="Ex. tranche"></div>
+      </div>
+      <div class="modal-actions" style="padding:12px 0 0;border:none">
+        <button type="submit" class="btn btn-primary btn-sm">Enregistrer l'aliment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <datalist id="foods-datalist"></datalist>
 
 <script src="js/data.js"></script>
 <script src="js/app.js"></script>
+<script src="js/suivi.js"></script>
+<script src="js/mobile.js"></script>
 </body>
 </html>

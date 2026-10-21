@@ -493,3 +493,117 @@ const REPAS = [
   { id: "di22", type: "diner", nom: "Moules marinières & salade", app: ["chrono", "mediterraneen", "lowcarb"], items: [["moules", 250], ["oignon", 40], ["salade", 80], ["vinaigrette", 10]] },
   { id: "dj24", type: "dej", nom: "Dorade grillée, boulgour & poivrons", app: ["mediterraneen", "equilibre"], items: [["dorade", 150], ["boulgour", 150], ["poivron", 120], ["huile_olive", 10]] }
 ];
+
+/* =====================================================
+   Suivi lipides / glucides / sel — données complémentaires
+   Pour 100 g : [sel (g), acides gras saturés (g), sucres (g)].
+   Ordres de grandeur inspirés de Ciqual (version non salée pour les
+   produits cuits à l'eau : le sel de cuisson est à noter à part).
+   ===================================================== */
+const NUTRI_PLUS = {
+  // Fruits
+  pomme: [0, 0.03, 11.5], banane: [0, 0.1, 15], orange: [0, 0.02, 8.5], poire: [0, 0.02, 10],
+  kiwi: [0, 0.03, 9], fraise: [0, 0.02, 5], framboise: [0, 0.02, 4.5], myrtille: [0, 0.03, 10],
+  raisin: [0, 0.05, 16], ananas: [0, 0.01, 10], mangue: [0, 0.1, 13], peche: [0, 0.02, 8],
+  abricot: [0, 0.03, 8], clementine: [0, 0.02, 9], melon: [0.03, 0.05, 7], pasteque: [0, 0.02, 6],
+  cerise: [0, 0.07, 13], prune: [0, 0.02, 9], figue: [0, 0.06, 15], citron: [0, 0.04, 2.5],
+  avocat: [0.02, 2.1, 0.7], compote: [0, 0.04, 13], abricot_sec: [0.03, 0.03, 45], datte: [0.01, 0.03, 63],
+  raisin_sec: [0.05, 0.06, 59], pruneau: [0.01, 0.05, 38],
+  // Légumes
+  carotte: [0.1, 0.03, 5], tomate: [0.01, 0.04, 3], brocoli: [0.07, 0.05, 1.5], epinard: [0.2, 0.05, 0.5],
+  haricot_vert: [0.01, 0.05, 2], poivron: [0.01, 0.03, 4], salade: [0.02, 0.03, 0.8], chou_fleur: [0.04, 0.06, 2],
+  aubergine: [0.01, 0.03, 3], champignon: [0.02, 0.05, 0.4], poireau: [0.03, 0.04, 3], oignon: [0.01, 0.03, 5],
+  betterave: [0.2, 0.03, 7], potiron: [0.01, 0.05, 3], asperge: [0.01, 0.04, 1.5], endive: [0.01, 0.02, 1],
+  celeri: [0.2, 0.04, 1.5], petit_pois: [0.01, 0.08, 5], mais: [0.5, 0.2, 5], fenouil: [0.1, 0.03, 3],
+  soupe_legumes: [0.7, 0.1, 2], courgette: [0.01, 0.06, 2], concombre: [0.01, 0.03, 2],
+  // Féculents
+  riz_blanc: [0.02, 0.05, 0.1], riz_complet: [0.02, 0.2, 0.4], pates: [0.01, 0.1, 0.6], pates_completes: [0.01, 0.2, 0.8],
+  pain_blanc: [1.3, 0.3, 2.5], pain_complet: [1.1, 0.4, 3], pain_cereales: [1.1, 0.8, 3], patate_douce: [0.1, 0.03, 6],
+  quinoa: [0.02, 0.2, 0.9], boulgour: [0.02, 0.05, 0.2], semoule: [0.02, 0.05, 0.2], avoine: [0.01, 1.3, 1],
+  muesli: [0.2, 1.5, 20], biscotte: [1.3, 1.5, 6], galette_riz: [0.3, 0.6, 0.5], pdt: [0.02, 0.02, 0.8],
+  pain_sans_gluten: [1.1, 0.5, 3],
+  // Légumineuses
+  lentilles: [0.01, 0.07, 0.5], pois_chiches: [0.02, 0.3, 1], haricots_rouges: [0.01, 0.1, 0.3],
+  haricots_blancs: [0.02, 0.1, 0.3], tofu: [0.03, 0.9, 0.7], houmous: [1.0, 1.4, 0.5],
+  // Viandes & œufs
+  poulet: [0.15, 0.5, 0], steak5: [0.2, 2.3, 0], boeuf_roti: [0.15, 2.5, 0], porc_filet: [0.15, 1.2, 0],
+  jambon_blanc: [1.9, 1.1, 0.8], jambon_cru: [5.0, 4, 0.3], veau: [0.2, 0.6, 0], agneau: [0.2, 8, 0],
+  canard: [0.2, 7, 0], lapin: [0.15, 1.5, 0], oeuf: [0.35, 2.8, 0.3], dinde: [0.15, 0.5, 0],
+  // Poissons & fruits de mer
+  saumon: [0.15, 2.5, 0], saumon_fume: [3.0, 2, 0], thon_boite: [0.9, 0.3, 0], cabillaud: [0.25, 0.1, 0],
+  sardine: [0.3, 2.5, 0], maquereau: [0.2, 3.5, 0], truite: [0.1, 1.2, 0], crevette: [1.5, 0.2, 0],
+  dorade: [0.2, 1.2, 0], sole: [0.25, 0.3, 0], moules: [0.7, 0.4, 0], colin: [0.25, 0.2, 0],
+  // Produits laitiers
+  lait_demi: [0.1, 1, 4.8], lait_ecreme: [0.1, 0.1, 4.8], lait_amande: [0.12, 0.1, 0.2],
+  yaourt_nature: [0.13, 0.8, 4.7], yaourt_grec: [0.1, 6.5, 4], fromage_blanc0: [0.1, 0.1, 4],
+  fromage_blanc: [0.1, 2, 3.8], skyr: [0.1, 0.1, 4], emmental: [0.6, 18, 0], camembert: [1.6, 14, 0],
+  chevre: [1.6, 15, 0], feta: [3.0, 14, 0.5], mozzarella: [0.5, 12, 1], parmesan: [1.6, 19, 0],
+  beurre: [0.03, 53, 0.6], creme_fraiche: [0.1, 20, 2.5], creme_legere: [0.1, 9, 3.5], comte: [0.8, 21, 0],
+  yaourt_soja: [0.1, 0.4, 1], creme_soja: [0.1, 2, 2],
+  // Matières grasses & oléagineux
+  huile_olive: [0, 14, 0], huile_colza: [0, 7, 0], amandes: [0.01, 4, 4.5], noix: [0.01, 6.5, 2.6],
+  noisettes: [0.01, 4.5, 4], cajou: [0.03, 8, 6], pistaches: [1.2, 6, 7], cacahuetes: [1.0, 7, 4],
+  beurre_cacahuete: [0.9, 10, 6], chia: [0.04, 3.3, 0], lin: [0.08, 3.7, 1.5], olives: [2.8, 2, 0],
+  // Sucré & divers
+  chocolat_noir: [0.03, 26, 28], chocolat_lait: [0.25, 19, 52], miel: [0.02, 0, 81], sucre: [0, 0, 100],
+  biscuits: [0.7, 6, 23], pain_epices: [0.6, 0.3, 40], jus_orange: [0, 0, 9], confiture: [0.02, 0, 55],
+  // Sauces & condiments
+  vinaigrette: [1.8, 4, 2.5], mayonnaise: [1.2, 6, 1.5], sauce_tomate: [0.9, 0.2, 5], moutarde: [6.0, 0.7, 2]
+};
+
+/* Aliments ajoutés pour le suivi du quotidien : ce sont souvent eux qui
+   font exploser le compteur de sel ou de lipides sans qu'on s'en rende compte. */
+const ALIMENTS_SUIVI = [
+  { id: "sel", nom: "Sel de table", cat: "Sauces & condiments", kcal: 0, p: 0, g: 0, l: 0, sel: 100, ags: 0, suc: 0 },
+  { id: "sauce_soja", nom: "Sauce soja", cat: "Sauces & condiments", kcal: 60, p: 8, g: 6, l: 0.1, sel: 14, ags: 0, suc: 1.5 },
+  { id: "bouillon_cube", nom: "Bouillon cube (déshydraté)", cat: "Sauces & condiments", kcal: 230, p: 10, g: 15, l: 15, sel: 47, ags: 7, suc: 3 },
+  { id: "ketchup", nom: "Ketchup", cat: "Sauces & condiments", kcal: 110, p: 1.3, g: 25, l: 0.2, sel: 1.8, ags: 0, suc: 22 },
+  { id: "cornichons", nom: "Cornichons", cat: "Sauces & condiments", kcal: 18, p: 0.8, g: 2, l: 0.2, sel: 2.2, ags: 0, suc: 1.5 },
+  { id: "beurre_demi_sel", nom: "Beurre demi-sel", cat: "Produits laitiers", kcal: 730, p: 0.7, g: 0.7, l: 80, sel: 2, ags: 53, suc: 0.7 },
+  { id: "roquefort", nom: "Roquefort / bleu", cat: "Produits laitiers", kcal: 370, p: 20, g: 0, l: 32, sel: 3.5, ags: 21, suc: 0 },
+  { id: "pain_mie", nom: "Pain de mie", cat: "Féculents", kcal: 270, p: 8, g: 48, l: 4.5, sel: 1.2, ags: 0.6, suc: 5 },
+  { id: "croissant", nom: "Croissant", cat: "Féculents", kcal: 420, p: 8, g: 45, l: 22, sel: 1.0, ags: 13, suc: 9 },
+  { id: "cereales_pdej", nom: "Céréales petit-déj (type corn flakes)", cat: "Féculents", kcal: 375, p: 7, g: 84, l: 1, sel: 1.4, ags: 0.2, suc: 8 },
+  { id: "frites", nom: "Frites (au four)", cat: "Féculents", kcal: 200, p: 3, g: 30, l: 7, sel: 0.5, ags: 1, suc: 0.5 },
+  { id: "saucisson", nom: "Saucisson sec", cat: "Viandes & œufs", kcal: 410, p: 26, g: 2, l: 33, sel: 5, ags: 12, suc: 1 },
+  { id: "lardons", nom: "Lardons", cat: "Viandes & œufs", kcal: 270, p: 16, g: 0.5, l: 23, sel: 2.5, ags: 8.5, suc: 0 },
+  { id: "saucisse", nom: "Saucisse de Strasbourg", cat: "Viandes & œufs", kcal: 270, p: 12, g: 2, l: 24, sel: 2.0, ags: 9, suc: 1 },
+  { id: "surimi", nom: "Surimi", cat: "Poissons & fruits de mer", kcal: 100, p: 8, g: 14, l: 1.5, sel: 1.8, ags: 0.3, suc: 5 },
+  { id: "pizza", nom: "Pizza (type margherita)", cat: "Plats préparés", kcal: 250, p: 11, g: 28, l: 10, sel: 1.3, ags: 4.5, suc: 3 },
+  { id: "quiche", nom: "Quiche lorraine", cat: "Plats préparés", kcal: 280, p: 9, g: 18, l: 19, sel: 0.9, ags: 9, suc: 1.5 },
+  { id: "lasagnes", nom: "Lasagnes bolognaise (plat préparé)", cat: "Plats préparés", kcal: 150, p: 7.5, g: 14, l: 7, sel: 0.9, ags: 3, suc: 2.5 },
+  { id: "chips", nom: "Chips", cat: "Sucré & divers", kcal: 540, p: 6, g: 50, l: 34, sel: 1.3, ags: 3, suc: 0.5 },
+  { id: "soda", nom: "Soda sucré (type cola)", cat: "Boissons", kcal: 42, p: 0, g: 10.6, l: 0, sel: 0, ags: 0, suc: 10.6 },
+  { id: "eau_vichy", nom: "Eau gazeuse riche en sodium (type Vichy)", cat: "Boissons", kcal: 0, p: 0, g: 0, l: 0, sel: 0.43, ags: 0, suc: 0 },
+  { id: "biere", nom: "Bière blonde", cat: "Boissons", kcal: 40, p: 0.3, g: 3, l: 0, sel: 0.01, ags: 0, suc: 0.2 },
+  { id: "vin", nom: "Vin rouge", cat: "Boissons", kcal: 70, p: 0, g: 0.5, l: 0, sel: 0.01, ags: 0, suc: 0.5 }
+];
+
+(function enrichirAliments() {
+  ALIMENTS.forEach(a => {
+    const x = NUTRI_PLUS[a.id];
+    if (a.sel === undefined) a.sel = x ? x[0] : 0;
+    if (a.ags === undefined) a.ags = x ? x[1] : 0;
+    if (a.suc === undefined) a.suc = x ? x[2] : 0;
+  });
+  ALIMENTS.push(...ALIMENTS_SUIVI);
+  UNITES.sel = { g: 0.4, l: "pincée" };
+  UNITES.bouillon_cube = { g: 10, l: "cube" };
+  UNITES.croissant = { g: 60, l: "pièce" };
+  UNITES.pain_mie = { g: 25, l: "tranche" };
+  UNITES.saucisse = { g: 35, l: "saucisse" };
+  UNITES.sauce_soja = { g: 15, l: "c. à soupe" };
+  UNITES.ketchup = { g: 15, l: "c. à soupe" };
+  UNITES.biere = { g: 250, l: "demi" };
+  UNITES.vin = { g: 125, l: "verre" };
+  UNITES.soda = { g: 330, l: "canette" };
+})();
+
+/* Repères nutritionnels (seuils « feu tricolore » pour 100 g, utilisés sur les
+   étiquettes européennes) : ≤ bas = vert, > haut = rouge. */
+const SEUILS_100G = {
+  sel: { bas: 0.3, haut: 1.5 },
+  l: { bas: 3, haut: 17.5 },
+  ags: { bas: 1.5, haut: 5 },
+  suc: { bas: 5, haut: 22.5 }
+};
