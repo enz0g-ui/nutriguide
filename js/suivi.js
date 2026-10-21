@@ -411,45 +411,83 @@ function importMenuDayToJournal(menuDay) {
 }
 
 /* ---------- Aliments personnels ---------- */
-function openFoodModal(prefill) {
+/* prefill : nom (texte) ; data : aliment déjà rempli (ex. venant d'Open Food Facts)
+   avec éventuellement data.code (code-barres) et data.missing (valeurs absentes). */
+function openFoodModal(prefill, data) {
   const cats = [...new Set(["Mes aliments", ...ALIMENTS.map(a => a.cat)])];
+  if (data && data.cat && !cats.includes(data.cat)) cats.push(data.cat);
   $("#ff-cat").innerHTML = cats.map(c => `<option>${escapeHtml(c)}</option>`).join("");
   $("#food-form").reset();
+  $("#ff-note").innerHTML = "";
   if (prefill) $("#ff-nom").value = prefill;
+  if (data) {
+    $("#ff-nom").value = data.nom || "";
+    $("#ff-code").value = data.code || "";
+    // Valeur manquante : champ vidé (et non « 0 ») pour attirer l'œil
+    const set = (id, v) => {
+      if ((data.missing || []).includes(id)) $("#ff-" + id).value = "";
+      else if (v !== undefined && v !== null) $("#ff-" + id).value = v;
+    };
+    ["kcal", "p", "l", "ags", "g", "suc", "sel"].forEach(k => set(k, data[k]));
+    if (data.cat) $("#ff-cat").value = data.cat;
+    if (data.portion) { $("#ff-portion").value = data.portion.g; $("#ff-portion-l").value = data.portion.l || ""; }
+    if (data.missing && data.missing.length) {
+      $("#ff-note").innerHTML = `⚠️ Valeurs absentes d'Open Food Facts : <strong>${data.missing.map(k => FF_LABELS[k]).join(", ")}</strong>.
+        Complétez-les depuis l'étiquette (les champs vides comptent pour 0).`;
+    } else if (data.code) {
+      $("#ff-note").textContent = "Valeurs pré-remplies depuis Open Food Facts : vérifiez-les avec l'étiquette avant d'enregistrer.";
+    }
+  }
   $("#food-modal").hidden = false;
-  $("#ff-nom").focus();
+  $("#ff-nom").focus({ preventScroll: true });
 }
+const FF_LABELS = { kcal: "énergie", p: "protéines", l: "lipides", ags: "saturés", g: "glucides", suc: "sucres", sel: "sel" };
 function closeFoodModal() { $("#food-modal").hidden = true; }
+
+/* Enregistre (ou met à jour, même id) un aliment personnel et rafraîchit tous les index. */
+function upsertCustomFood(food) {
+  const custom = loadCustomFoods().filter(x => x.id !== food.id);
+  custom.push(food);
+  store.set("custom_foods", custom);
+  const i = ALIMENTS.findIndex(x => x.id === food.id);
+  if (i >= 0) ALIMENTS[i] = food; else ALIMENTS.push(food);
+  if (food.portion && food.portion.g > 0) UNITES[food.id] = { g: food.portion.g, l: food.portion.l || "portion" };
+  else delete UNITES[food.id];
+  rebuildFoodIndex();
+  refreshAlimCats();
+  renderAliments();
+}
+/* Met l'aliment dans le champ de saisie du suivi (aperçu + portion proposée) */
+function useFoodInSuivi(food) {
+  const sel = $("#sv-unit");
+  sel.dataset.food = ""; // force la remise à jour de l'unité / quantité
+  $("#sv-food").value = food.nom;
+  renderPreview();
+}
 function saveCustomFood(e) {
   e.preventDefault();
   const num = (id) => Math.max(0, parseFloat(String($(id).value).replace(",", ".")) || 0);
   const nom = $("#ff-nom").value.trim();
   if (!nom) return;
-  if (ALIMENTS_BY_NAME[nom.toLowerCase()]) { toast("Un aliment porte déjà ce nom"); return; }
+  const code = $("#ff-code").value.replace(/\D/g, "");
+  const id = code ? "off_" + code : "perso_" + Date.now();
+  const homonyme = ALIMENTS_BY_NAME[nom.toLowerCase()];
+  if (homonyme && homonyme.id !== id) { toast("Un aliment porte déjà ce nom"); return; }
   const sodium = num("#ff-sodium");
   const food = {
-    id: "perso_" + Date.now(), nom, cat: $("#ff-cat").value || "Mes aliments", perso: true,
+    id, nom, cat: $("#ff-cat").value || "Mes aliments", perso: true,
     kcal: num("#ff-kcal"), p: num("#ff-p"), g: num("#ff-g"), l: num("#ff-l"),
     ags: num("#ff-ags"), suc: num("#ff-suc"),
     sel: sodium > 0 && !num("#ff-sel") ? Math.round(sodium * 2.5 / 10) / 100 : num("#ff-sel")
   };
+  if (code) food.code = code;
   if (food.ags > food.l || food.suc > food.g) { toast("« dont » ne peut pas dépasser le total (saturés ≤ lipides, sucres ≤ glucides)"); return; }
   const portion = num("#ff-portion");
-  if (portion > 0) {
-    food.portion = { g: portion, l: $("#ff-portion-l").value.trim() || "portion" };
-    UNITES[food.id] = { g: portion, l: food.portion.l };
-  }
-  const custom = loadCustomFoods();
-  custom.push(food);
-  store.set("custom_foods", custom);
-  ALIMENTS.push(food);
-  rebuildFoodIndex();
-  refreshAlimCats();
-  renderAliments();
+  if (portion > 0) food.portion = { g: portion, l: $("#ff-portion-l").value.trim() || "portion" };
+  upsertCustomFood(food);
   closeFoodModal();
-  $("#sv-food").value = food.nom;
-  renderPreview();
-  toast(`« ${food.nom} » ajouté à votre base`);
+  useFoodInSuivi(food);
+  toast(`« ${food.nom} » enregistré dans votre base`);
 }
 function deleteCustomFood(id) {
   const a = ALIMENTS_MAP[id];

@@ -5,7 +5,7 @@
    le navigateur installe la nouvelle version en arrière-plan et l'app propose
    « Mettre à jour ».
    ⚠️ Incrémenter VERSION à chaque modification des fichiers. */
-const VERSION = "nutriguide-v2";
+const VERSION = "nutriguide-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -14,6 +14,7 @@ const ASSETS = [
   "./js/app.js",
   "./js/suivi.js",
   "./js/mobile.js",
+  "./js/scan.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -56,7 +57,11 @@ self.addEventListener("fetch", (event) => {
     const cached = await cache.match(req, { ignoreSearch: true });
     if (cached) return cached;
     try {
-      return await fetch(req);
+      const res = await fetch(req);
+      // Lecteur de codes-barres (chargé seulement sur les téléphones sans lecteur natif) :
+      // gardé en cache après le premier usage pour fonctionner hors ligne
+      if (res.ok && url.pathname.includes("/js/vendor/")) cache.put(req, res.clone());
+      return res;
     } catch {
       return req.mode === "navigate" ? (await cache.match("./index.html")) : Response.error();
     }

@@ -913,3 +913,73 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
   #alim-new-food { flex: 0 0 auto; width: auto !important; }
   .alim-table th[data-sort="cat"] { display: none; }
 }
+
+/* =====================================================
+   Scanner de code-barres (Open Food Facts)
+   ===================================================== */
+.sv-ac-wrap { display: flex; gap: 6px; align-items: stretch; }
+.sv-ac-wrap input { flex: 1; min-width: 0; }
+.sv-scan-btn {
+  flex: 0 0 auto; width: 46px; border: 1.5px solid var(--green-600); border-radius: 10px;
+  background: var(--green-50); font-size: 1.25rem; cursor: pointer;
+}
+.sv-scan-btn:hover { background: var(--green-100); }
+.sv-ac { right: 52px; }
+.scan-overlay { z-index: 95; }
+.scan-modal { width: min(520px, 100%); }
+.scan-view {
+  position: relative; border-radius: 14px; overflow: hidden; background: #111;
+  aspect-ratio: 4 / 3; max-height: 46vh; width: 100%;
+}
+.scan-view.off { display: none; }
+.scan-view video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-frame {
+  position: absolute; left: 10%; right: 10%; top: 30%; bottom: 30%;
+  border: 3px solid rgba(255, 255, 255, .9); border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, .35);
+}
+.scan-line {
+  position: absolute; left: 6px; right: 6px; height: 2px; top: 50%;
+  background: #ff4d4d; box-shadow: 0 0 8px #ff4d4d; animation: scanline 1.6s ease-in-out infinite;
+}
+@keyframes scanline { 0%, 100% { transform: translateY(-28px); } 50% { transform: translateY(28px); } }
+.scan-torch {
+  position: absolute; right: 10px; bottom: 10px; width: 44px; height: 44px; border-radius: 50%;
+  border: none; background: rgba(0, 0, 0, .55); color: #fff; font-size: 1.2rem; cursor: pointer;
+}
+.scan-torch.on { background: #f5c518; }
+.scan-status { margin: 10px 0 8px; font-size: .9rem; color: var(--ink-soft); }
+.scan-status.ok { color: var(--green-700); font-weight: 600; }
+.scan-status.warn { color: #8a5300; }
+.scan-manual { display: flex; gap: 8px; margin-bottom: 10px; }
+.scan-manual input { flex: 1; min-width: 0; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: 10px; font: inherit; }
+.scan-card { border: 1.5px solid var(--green-500); border-radius: 14px; padding: 12px; background: #fff; }
+.sc-head { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.sc-img { width: 64px; height: 64px; object-fit: contain; border-radius: 10px; background: var(--green-50); flex: 0 0 auto; }
+.sc-noimg { display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+.sc-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sc-title strong { font-size: 1rem; line-height: 1.3; }
+.sc-title .small-note { margin: 0; }
+.nutriscore { align-self: flex-start; font-size: .72rem; font-weight: 700; color: #fff; padding: 1px 8px; border-radius: 6px; }
+.ns-a { background: #038141; } .ns-b { background: #85bb2f; } .ns-c { background: #fecb02; color: #333; }
+.ns-d { background: #ee8100; } .ns-e { background: #e63e11; }
+.sc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.sc-val { background: var(--green-50); border-radius: 8px; padding: 6px 8px; }
+.sc-val > span { display: block; font-size: .72rem; color: var(--ink-soft); }
+.sc-val strong { font-size: .92rem; white-space: nowrap; }
+.sc-val.missing { background: var(--warn-bg); }
+.scan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.scan-loading { display: flex; justify-content: center; padding: 20px; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--green-100); border-top-color: var(--green-600); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.scan-credit { margin-top: 10px; }
+.ff-code-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 4px; }
+.ff-code-row .form-row { flex: 1; min-width: 160px; margin-bottom: 0 !important; }
+.ff-note { font-size: .84rem; color: #8a5300; margin: 6px 0 10px; }
+.ff-note:empty { display: none; }
+@media (max-width: 760px) {
+  .scan-modal { max-height: 96dvh; }
+  .scan-view { max-height: 40dvh; }
+  .scan-actions .btn { flex: 1 1 100%; padding: 11px; }
+  .sv-scan-btn { width: 52px; font-size: 1.4rem; }
+}

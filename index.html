@@ -172,6 +172,7 @@
               <div class="sv-ac-wrap">
                 <input type="search" id="sv-food" placeholder="Ex. pain, jambon, comté…" autocomplete="off" autocapitalize="off" enterkeyhint="next">
                 <div class="sv-ac" id="sv-ac" role="listbox" hidden></div>
+                <button type="button" class="sv-scan-btn" id="sv-scan" title="Scanner un code-barres" aria-label="Scanner un code-barres">📷</button>
               </div>
             </div>
             <div class="control sv-qty">
@@ -515,7 +516,15 @@
       <button class="modal-close" id="food-modal-close" title="Fermer">✕</button>
     </div>
     <form class="modal-body food-form" id="food-form">
-      <p class="liste-sub">Recopiez le tableau nutritionnel <strong>pour 100 g</strong> (ou 100 ml) de l'emballage.</p>
+      <p class="liste-sub">Scannez le code-barres pour pré-remplir depuis Open Food Facts, ou recopiez le tableau
+        nutritionnel <strong>pour 100 g</strong> (ou 100 ml) de l'emballage.</p>
+      <div class="ff-code-row">
+        <div class="form-row"><label for="ff-code">Code-barres (optionnel)</label>
+          <input type="text" id="ff-code" inputmode="numeric" pattern="[0-9]*" maxlength="14" placeholder="Ex. 3017620422003"></div>
+        <button type="button" class="btn btn-ghost btn-sm" id="ff-scan">📷 Scanner</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="ff-lookup">🔎 Chercher</button>
+      </div>
+      <p class="ff-note" id="ff-note"></p>
       <div class="form-row"><label for="ff-nom">Nom</label><input type="text" id="ff-nom" required maxlength="60" placeholder="Ex. Jambon -25 % de sel marque X"></div>
       <div class="ff-grid">
         <div class="form-row"><label for="ff-kcal">Énergie (kcal)</label><input type="number" id="ff-kcal" min="0" step="any" required></div>
@@ -539,6 +548,31 @@
   </div>
 </div>
 
+<!-- Scanner de code-barres (Open Food Facts) -->
+<div class="modal-overlay scan-overlay" id="scan-modal" hidden>
+  <div class="modal scan-modal" role="dialog" aria-labelledby="scan-title">
+    <div class="modal-head">
+      <h2 id="scan-title">📷 Scanner un produit</h2>
+      <button class="modal-close" id="scan-close" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="scan-view" id="scan-view">
+        <video id="scan-video" playsinline muted></video>
+        <div class="scan-frame"><span class="scan-line"></span></div>
+        <button type="button" class="scan-torch" id="scan-torch" hidden title="Lampe">🔦</button>
+      </div>
+      <p class="scan-status" id="scan-status">Visez le code-barres du produit.</p>
+      <form class="scan-manual" id="scan-manual">
+        <input type="text" id="scan-code" inputmode="numeric" pattern="[0-9]*" maxlength="14" placeholder="… ou tapez le code-barres" autocomplete="off">
+        <button type="submit" class="btn btn-ghost btn-sm">Chercher</button>
+      </form>
+      <div id="scan-result"></div>
+      <p class="small-note scan-credit">Données <a href="https://fr.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>
+        (base collaborative, licence ODbL) — vérifiez avec l'étiquette.</p>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <datalist id="foods-datalist"></datalist>
 
@@ -546,5 +580,6 @@
 <script src="js/app.js"></script>
 <script src="js/suivi.js"></script>
 <script src="js/mobile.js"></script>
+<script src="js/scan.js"></script>
 </body>
 </html>

@@ -143,7 +143,9 @@ function closeAddSheet(fromPopstate) {
   if (document.activeElement) document.activeElement.blur();
   if (!fromPopstate && history.state && history.state.sheet) history.back();
 }
-window.addEventListener("popstate", () => closeAddSheet(true));
+// Retour arrière : on ne referme la feuille que si l'on quitte vraiment son état
+// (revenir du scanner, ouvert par-dessus, ne doit pas la fermer)
+window.addEventListener("popstate", () => { if (!(history.state && history.state.sheet)) closeAddSheet(true); });
 $("#sv-fab").addEventListener("click", () => openAddSheet());
 $("#sv-sheet-close").addEventListener("click", () => closeAddSheet());
 $("#sheet-backdrop").addEventListener("click", () => closeAddSheet());
