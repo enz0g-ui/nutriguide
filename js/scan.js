@@ -80,6 +80,8 @@ function offToFood(p, code) {
   const vals = { kcal, p: num("proteins_100g"), g: num("carbohydrates_100g"), suc: num("sugars_100g"),
     l: num("fat_100g"), ags: num("saturated-fat_100g"), sel };
   const missing = Object.keys(vals).filter(k => vals[k] === null);
+  const fib = num("fiber_100g"); // souvent absent sur Open Food Facts : facultatif, compté 0
+  const pot = num("potassium_100g"); // en g sur OFF → converti en mg ; facultatif
   const brand = (p.brands || "").split(",")[0].trim();
   let nom = (p.product_name_fr || p.product_name || p.generic_name_fr || "").trim() || `Produit ${code}`;
   if (brand && !nom.toLowerCase().includes(brand.toLowerCase())) nom += ` — ${brand}`;
@@ -87,7 +89,7 @@ function offToFood(p, code) {
   const food = {
     id: "off_" + code, code, nom, cat: offCategory(p.categories_tags), perso: true, source: "off",
     kcal: Math.round(vals.kcal || 0), p: round2(vals.p || 0), g: round2(vals.g || 0), l: round2(vals.l || 0),
-    ags: round2(vals.ags || 0), suc: round2(vals.suc || 0), sel: round2(vals.sel || 0),
+    ags: round2(vals.ags || 0), suc: round2(vals.suc || 0), sel: round2(vals.sel || 0), fib: round2(fib || 0), pot: Math.round((pot || 0) * 1000),
     nutriscore: /^[a-e]$/.test(p.nutriscore_grade || "") ? p.nutriscore_grade : null,
     image: p.image_front_small_url || null,
     quantite: p.quantity || null
@@ -299,7 +301,8 @@ function renderScanResult(food, known) {
   const parPortion = portion
     ? `<p class="small-note">Par portion (${fmtG(portion, 0)} g) : 🧂 ${v(food.sel * portion / 100, 2)} g sel
         (${Math.round(food.sel * portion / 100 / lim.sel * 100)} % de votre limite) ·
-        🫒 ${v(food.l * portion / 100, 1)} g lipides · ⚡ ${v(food.g * portion / 100, 1)} g glucides</p>`
+        🫒 ${v(food.l * portion / 100, 1)} g lipides · ⚡ ${v(food.g * portion / 100, 1)} g glucides ·
+        💪 ${v(food.p * portion / 100, 1)} g protéines · 🌾 ${v((food.fib || 0) * portion / 100, 1)} g fibres</p>`
     : "";
   $("#scan-result").innerHTML = `<div class="scan-card">
     <div class="sc-head">
@@ -313,6 +316,7 @@ function renderScanResult(food, known) {
     <div class="sc-grid">
       ${cell("sel", "🧂 Sel", 2)}${cell("l", "🫒 Lipides", 1)}${cell("ags", "dont saturés", 1)}
       ${cell("g", "⚡ Glucides", 1)}${cell("suc", "dont sucres", 1)}
+      ${cell("p", "💪 Protéines", 1)}${cell("fib", "🌾 Fibres", 1)}
       <div class="sc-val ${miss("kcal") ? "missing" : ""}"><span>🔥 Énergie</span><strong>${miss("kcal") ? "?" : fmtKcal(food.kcal) + " kcal"}</strong></div>
     </div>
     <p class="small-note" style="margin-top:4px">Valeurs pour 100 g${known ? " — enregistrées dans votre base" : ""}.</p>

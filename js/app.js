@@ -75,8 +75,8 @@ function setTarget(v) {
 }
 
 /* ---------- Calculs nutritionnels ---------- */
-const NUTRI_KEYS = ["kcal", "p", "g", "l", "sel", "ags", "suc"];
-function zeroNutrition() { return { kcal: 0, p: 0, g: 0, l: 0, sel: 0, ags: 0, suc: 0 }; }
+const NUTRI_KEYS = ["kcal", "p", "g", "l", "sel", "ags", "suc", "fib", "pot"];
+function zeroNutrition() { return { kcal: 0, p: 0, g: 0, l: 0, sel: 0, ags: 0, suc: 0, fib: 0, pot: 0 }; }
 function itemNutrition(item) {
   const a = ALIMENTS_MAP[item.id];
   if (!a) return zeroNutrition();
@@ -108,8 +108,48 @@ const LIMITE_LABELS = {
   l: { nom: "Lipides", emoji: "🫒", dec: 0 },
   ags: { nom: "dont saturés", emoji: "🧈", dec: 0 },
   g: { nom: "Glucides", emoji: "⚡", dec: 0 },
-  suc: { nom: "dont sucres", emoji: "🍬", dec: 0 }
+  suc: { nom: "dont sucres", emoji: "🍬", dec: 0 },
+  // Objectifs à ATTEINDRE (et non limites à ne pas dépasser)
+  p: { nom: "Protéines", emoji: "💪", dec: 0, goal: true },
+  fib: { nom: "Fibres", emoji: "🌾", dec: 0, goal: true },
+  // Potassium : objectif OU limite selon le réglage (certains traitements demandent de le limiter)
+  pot: { nom: "Potassium", emoji: "🍌", dec: 0, goal: true, unit: "mg" }
 };
+const OBJ_KEYS = ["p", "fib", "pot"]; // rangés à part des limites (« objectifs »)
+const U = (k) => (LIMITE_LABELS[k] && LIMITE_LABELS[k].unit) || "g";
+/* Objectifs protéines & fibres : indépendants des préréglages de limites.
+   Protéines : ~1 g par kilo de poids (repère courant 0,8 à 1,2 g/kg), sinon 15 % des calories.
+   Fibres : 30 g par jour (repère ANSES). Modifiables dans « Mes limites ». */
+function defaultObjectifs(kcal) {
+  const prof = store.get("profile", null);
+  const p = prof && prof.poids > 30 ? Math.round(prof.poids) : Math.round((kcal || getTarget()) * 0.15 / 4);
+  return { p, fib: 30, pot: 3500 }; // potassium : ≥ 3 500 mg/j (repère OMS) en l'absence de contre-indication
+}
+function getObjectifs() {
+  const o = store.get("objectifs", null) || {};
+  const d = defaultObjectifs();
+  const potMode = o.potMode === "limit" ? "limit" : "goal";
+  LIMITE_LABELS.pot.goal = potMode === "goal";
+  return {
+    p: o.p > 0 ? o.p : d.p, fib: o.fib > 0 ? o.fib : d.fib,
+    pot: o.pot > 0 ? o.pot : (potMode === "limit" ? 2500 : d.pot), potMode, perso: !!o.perso
+  };
+}
+function setObjectifs(o) { store.set("objectifs", { ...o, perso: true }); }
+/* Pastille d'un repère suivi : objectif à atteindre ou limite selon son réglage */
+function trackChipHtml(k, val, target, long) {
+  if (LIMITE_LABELS[k].goal) return goalChipHtml(k, val, target, long);
+  const L = LIMITE_LABELS[k];
+  const st = limitStatus(val, target);
+  return `<span class="lim-chip ${st}" title="${L.nom} : ${fmtG(val, 0)} ${U(k)} sur ${fmtG(target, 0)} ${U(k)}">
+    ${L.emoji} ${long ? L.nom + " " : ""}<strong>${fmtG(val, 0)}</strong>/${fmtG(target, 0)} ${U(k)}</span>`;
+}
+/* Statut d'un objectif à atteindre : done (atteint), mid (≥ 60 %), low */
+function goalStatus(val, target) {
+  if (!target) return "done";
+  const r = val / target;
+  return r >= 0.995 ? "done" : r >= 0.6 ? "mid" : "low";
+}
 function computePreset(key, kcal) {
   const p = LIMITE_PRESETS[key];
   return {
@@ -124,10 +164,14 @@ function computePreset(key, kcal) {
 }
 function getLimites() {
   const saved = store.get("limites", null);
-  if (saved && saved.sel > 0) return saved;
-  return computePreset("anses", getTarget());
+  const o = getObjectifs();
+  if (saved && saved.sel > 0) return { ...saved, p: o.p, fib: o.fib, pot: o.pot };
+  return { ...computePreset("anses", getTarget()), p: o.p, fib: o.fib, pot: o.pot };
 }
-function setLimites(lim) { store.set("limites", lim); }
+function setLimites(lim) {
+  const { p, fib, pot, ...rest } = lim; // les objectifs protéines / fibres / potassium sont rangés à part
+  store.set("limites", rest);
+}
 /* Statut d'une valeur vs sa limite : ok (< 85 %), warn (85-100 %), over (> 100 %) */
 function limitStatus(val, lim) {
   if (!lim) return "ok";
@@ -147,7 +191,14 @@ function limitsLineHtml(n) {
     const st = limitStatus(n[k], lim[k]);
     return `<span class="lim-chip ${st}" title="${L.nom} : ${fmtG(n[k], L.dec)} g sur ${fmtG(lim[k], L.dec)} g">
       ${L.emoji} ${L.nom} <strong>${fmtG(n[k], L.dec)}</strong>/${fmtG(lim[k], L.dec)} g</span>`;
-  }).join("") + `</div>`;
+  }).join("") + OBJ_KEYS.map(k => trackChipHtml(k, n[k], lim[k], true)).join("") + `</div>`;
+}
+/* Pastille d'un objectif à atteindre (protéines, fibres) */
+function goalChipHtml(k, val, target, long) {
+  const L = LIMITE_LABELS[k];
+  const st = goalStatus(val, target);
+  return `<span class="lim-chip goal ${st}" title="${L.nom} : ${fmtG(val, 0)} ${U(k)} pour un objectif de ${fmtG(target, 0)} ${U(k)}">
+    ${L.emoji} ${long ? L.nom + " " : ""}<strong>${fmtG(val, 0)}</strong>/${fmtG(target, 0)} ${U(k)}${st === "done" ? " ✓" : ""}</span>`;
 }
 function dayNutrition(day) {
   return sumNutrition(MEAL_TYPES.flatMap(([key]) => day[key].items));
@@ -1301,7 +1352,7 @@ function setupAliments() {
   refreshAlimCats();
   $("#alim-search").addEventListener("input", renderAliments);
   $("#alim-cat").addEventListener("change", renderAliments);
-  ["alim-vegetarien", "alim-sansgluten", "alim-sanslactose", "alim-peusel", "alim-peugras", "alim-peusucre"].forEach(id => {
+  ["alim-vegetarien", "alim-sansgluten", "alim-sanslactose", "alim-peusel", "alim-peugras", "alim-peusucre", "alim-fibres"].forEach(id => {
     $("#" + id).addEventListener("change", renderAliments);
   });
   $("#alim-table thead").addEventListener("click", (e) => {
@@ -1335,10 +1386,12 @@ function renderAliments() {
     sansLactose: $("#alim-sanslactose").checked
   };
   const peuSel = $("#alim-peusel").checked, peuGras = $("#alim-peugras").checked, peuSucre = $("#alim-peusucre").checked;
+  const richeFib = $("#alim-fibres").checked;
   const { key, dir } = alimSort;
   const rows = ALIMENTS
     .filter(a => (!cat || a.cat === cat) && (!q || (a.nom + " " + (a.alias || "")).toLowerCase().includes(q)) && foodOkForRegimes(a, reg))
     .filter(a => (!peuSel || a.sel <= SEUILS_100G.sel.bas) && (!peuGras || a.l <= SEUILS_100G.l.bas) && (!peuSucre || a.suc <= SEUILS_100G.suc.bas))
+    .filter(a => !richeFib || (a.fib || 0) >= 3) // « source de fibres » au sens de l'étiquetage européen
     .sort((a, b) => (key === "nom" || key === "cat")
       ? dir * String(a[key]).localeCompare(String(b[key]), "fr")
       : dir * ((a[key] || 0) - (b[key] || 0)) || a.nom.localeCompare(b.nom, "fr"));
@@ -1358,6 +1411,8 @@ function renderAliments() {
       <td class="num sub" data-label="Sucres">${feuHtml("suc", a.suc || 0)}${v(a.suc)} g</td>
       <td class="num" data-label="Lip.">${feuHtml("l", a.l)}${v(a.l)} g</td>
       <td class="num sub" data-label="Sat.">${feuHtml("ags", a.ags || 0)}${v(a.ags)} g</td>
+      <td class="num" data-label="Fibres">${v(a.fib)} g</td>
+      <td class="num" data-label="Potassium">${Math.round(a.pot || 0)} mg</td>
       <td class="num td-sel" data-label="Sel">${feuHtml("sel", a.sel || 0)}<strong>${v(a.sel)} g</strong></td>
     </tr>`).join("");
   $("#alim-count").textContent = `${rows.length} aliment${rows.length > 1 ? "s" : ""} affiché${rows.length > 1 ? "s" : ""} — valeurs pour 100 g.`;

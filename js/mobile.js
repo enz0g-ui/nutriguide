@@ -268,9 +268,9 @@ $(".sv-add").addEventListener("keydown", (e) => {
 function renderStickyStrip() {
   const t = dayTotals(svDate);
   const lim = getLimites();
-  $("#sv-sticky").innerHTML = ["sel", "l", "g"].map(k => {
+  $("#sv-sticky").innerHTML = ["sel", "l", "g", "p", "fib"].map(k => {
     const L = LIMITE_LABELS[k];
-    const st = limitStatus(t[k], lim[k]);
+    const st = L.goal ? "goal " + goalStatus(t[k], lim[k]) : limitStatus(t[k], lim[k]);
     const pct = lim[k] > 0 ? Math.min(100, t[k] / lim[k] * 100) : 0;
     return `<div class="ss-item ${st}">
       <span class="ss-lbl">${L.emoji} ${fmtG(t[k], L.dec)}<small>/${fmtG(lim[k], L.dec)}</small></span>

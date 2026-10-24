@@ -60,7 +60,7 @@ function rcRenderSummary() {
   const p = {};
   NUTRI_KEYS.forEach(k => { p[k] = r.per100[k] * r.part / 100; });
   const line = (n) => `🧂 ${fmtG(n.sel, 2)} g sel · 🫒 ${fmtG(n.l, 1)} g lipides (dont ${fmtG(n.ags, 1)} sat.) ·
-    ⚡ ${fmtG(n.g, 1)} g glucides (dont ${fmtG(n.suc, 1)} sucres) · 💪 ${fmtG(n.p, 1)} g prot.`;
+    ⚡ ${fmtG(n.g, 1)} g glucides (dont ${fmtG(n.suc, 1)} sucres) · 💪 ${fmtG(n.p, 1)} g prot. · 🌾 ${fmtG(n.fib, 1)} g fibres · 🍌 ${fmtG(n.pot, 0)} mg potassium`;
   const lim = getLimites();
   const lourd = ["sel", "l", "ags", "suc"].filter(k => lim[k] > 0 && p[k] / lim[k] >= 0.4);
   box.innerHTML = `
@@ -103,7 +103,7 @@ function saveRecette(e) {
   const food = {
     id, nom, cat: "Mes recettes", perso: true,
     kcal: round(r.per100.kcal, 0), p: round(r.per100.p, 1), g: round(r.per100.g, 1), l: round(r.per100.l, 1),
-    ags: round(r.per100.ags, 1), suc: round(r.per100.suc, 1), sel: round(r.per100.sel, 2),
+    ags: round(r.per100.ags, 1), suc: round(r.per100.suc, 1), sel: round(r.per100.sel, 2), fib: round(r.per100.fib, 1), pot: round(r.per100.pot, 0),
     portion: { g: Math.round(r.part), l: "part" },
     recette: {
       items: r.items.map(x => ({ id: x.a.id, q: x.q, u: x.u })),

@@ -252,12 +252,115 @@ const PLATS_MAISON = [
   ["profiteroles", "Profiteroles / choux à la crème", PV, [280, 5, 28, 16.5, 0.2, 10, 20], { u: [120, "portion"], G: 1, L: 1 }]
 ];
 
+
+/* Fibres (g pour 100 g) des ingrédients et plats ci-dessus — 0 si absent */
+const FIBRES_PLATS = {
+  // Ingrédients
+  farine: 3, maizena: 0.9, chapelure: 4, pates_crues: 3, riz_cru: 1.3, pate_brisee: 1.8, pate_feuilletee: 1.5,
+  pate_sablee: 1.5, lait_coco: 1, pate_tartiner: 3.4, bechamel: 0.2, pesto: 1.5,
+  // Plats maison
+  boeuf_bourguignon: 0.8, blanquette_veau: 0.5, pot_au_feu: 1.5, coq_au_vin: 0.6, daube: 0.8, navarin: 1.2,
+  lapin_moutarde: 0.3, hachis_parmentier: 1, poulet_basquaise: 1.2, escalope_panee: 0.6, cordon_bleu: 0.7,
+  boulettes_tomate: 0.8, chili: 3, couscous: 2, tajine_poulet: 1.3, curry_poulet: 0.8, paella: 0.8,
+  spaghetti_bolo: 1.5, pates_carbonara: 1.2, lasagnes_maison: 1.2, gratin_pates: 1.1, risotto_champi: 0.7,
+  endives_jambon: 0.8, gratin_choufleur: 1.4, gratin_courgettes: 0.8, gratin_dauphinois: 1.2, ratatouille: 1.8,
+  puree_maison: 1.2, pdt_sautees: 1.8, frites_friteuse: 3, moules_frites: 1.5, brandade: 0.8, poisson_pane: 0.8,
+  quiche_poireaux: 1, tarte_tomate: 1.4, bo_bun: 1, pad_thai: 1.2, riz_cantonais: 0.8, nems: 1.2, sushis: 0.6,
+  // Spécialités régionales
+  cacasse: 1.6, salade_lard: 1.5, boudin_blanc: 0.2, gateau_mollet: 1.5, tarte_sucre: 1.2, choucroute: 1.8,
+  baeckeoffe: 1.3, flammekueche: 1.2, potee: 2, cassoulet: 3, tartiflette: 1, raclette: 0.8, fondue_savoyarde: 1,
+  aligot: 0.8, truffade: 1.2, petit_sale: 3, carbonade: 0.6, welsh: 0.8, flamiche: 1.2, bouillabaisse: 0.6,
+  pissaladiere: 1.8, galette_complete: 1.5, kouign_amann: 1, far_breton: 1.5, gateau_basque: 1.2, canele: 0.5,
+  // Entrées, salades & soupes
+  salade_cesar: 1, salade_nicoise: 1.8, salade_pates: 1.5, salade_piemontaise: 1.2, taboule: 2,
+  carottes_rapees: 2.4, celeri_remoulade: 2.5, soupe_oignon: 1, veloute_potiron: 1, soupe_poireaux: 1.2,
+  gaspacho: 1, cake_sale: 1, gougeres: 0.8, feuillete_saucisse: 0.8, guacamole: 5,
+  // Sandwichs & snacking
+  jambon_beurre: 1.8, croque_monsieur: 1.6, croque_madame: 1.3, panini: 1.8, burger_maison: 1.5, kebab: 1.6,
+  tacos: 1.4, hot_dog: 1.4, wrap_poulet: 1.8, pizza_boulangerie: 2, croissant_jambon: 1.5, feuillete_jambon: 1,
+  friand: 1, sandwich_poulet: 2.2, sandwich_thon: 2.2, club_sandwich: 2,
+  // Restaurant & fast-food
+  resto_entrecote: 1.5, resto_tartare: 1.6, resto_burger: 1.8, resto_plat_jour: 1.2, resto_poisson: 1.8,
+  resto_pates: 1.4, resto_pizza: 2, resto_salade: 1.5, resto_croque: 1.4, resto_magret: 1.2,
+  resto_tartare_saumon: 0.5, resto_fish_chips: 1.8, resto_couscous: 2, resto_kebab_assiette: 1.6,
+  resto_menu_fastfood: 2, resto_nuggets: 1, resto_sushi: 0.6, resto_ramen: 0.6, resto_pho: 0.5,
+  resto_chinois: 1, resto_indien: 1, resto_naan: 2, resto_cafe_gourmand: 1.2, resto_moelleux: 1.5,
+  // Charcuterie & traiteur
+  pate_croute: 0.6,
+  // Desserts & gâteaux maison
+  gateau_chocolat: 2.5, gateau_yaourt: 1, quatre_quarts: 0.8, marbre: 1.2, cake_fruits: 1.8, brownie: 2.5,
+  cookies: 2, madeleine: 0.8, financier: 1.5, cheesecake: 0.5, tarte_pommes: 1.6, tarte_tatin: 1.5,
+  tarte_fraises: 1.2, tarte_citron: 0.7, clafoutis: 0.8, crumble_pommes: 1.8, flan_patissier: 0.3,
+  mousse_chocolat: 2.5, riz_au_lait: 0.2, tiramisu: 0.5, fraisier: 0.8, foret_noire: 1.5, buche_noel: 1,
+  galette_rois: 2, crepe_nature: 0.8, crepe_sucre: 0.7, crepe_nutella: 1.2, gaufre: 1, pancakes: 1,
+  pain_perdu: 1, salade_fruits: 1.8, sorbet: 0.8,
+  // Pâtisseries & viennoiseries
+  pain_chocolat: 2.5, chausson_pommes: 1.5, pain_raisins: 1.8, brioche: 1.8, chouquettes: 1, beignet: 1.5,
+  eclair: 0.8, paris_brest: 1.5, mille_feuille: 0.7, profiteroles: 0.8
+};
+
+
+/* Potassium (mg pour 100 g) des ingrédients et plats ci-dessus — 0 si absent */
+const POTASSIUM_PLATS = {
+  // Ingrédients
+  farine: 140, maizena: 5, chapelure: 200, pates_crues: 200, riz_cru: 100, pate_brisee: 100, pate_feuilletee: 90,
+  pate_sablee: 90, lait_entier: 150, chantilly: 80, creme_anglaise: 150, lait_coco: 220, pate_tartiner: 400,
+  boeuf_braiser: 300, viande_hachee: 290, echine_porc: 300, cuisse_poulet: 230, saucisse_fumee: 200,
+  bechamel: 140, pesto: 200, vin_blanc: 80,
+  // Plats maison
+  boeuf_bourguignon: 300, blanquette_veau: 230, pot_au_feu: 300, coq_au_vin: 260, daube: 300, navarin: 280,
+  lapin_moutarde: 280, hachis_parmentier: 300, poulet_basquaise: 300, poulet_roti: 250, roti_porc: 380,
+  escalope_panee: 280, cordon_bleu: 200, steak_hache_cuit: 330, boulettes_tomate: 280, chili: 330, couscous: 230,
+  tajine_poulet: 280, curry_poulet: 260, paella: 200, spaghetti_bolo: 200, pates_carbonara: 130,
+  lasagnes_maison: 220, gratin_pates: 140, risotto_champi: 120, endives_jambon: 220, gratin_choufleur: 230,
+  gratin_courgettes: 230, gratin_dauphinois: 300, ratatouille: 250, puree_maison: 300, pdt_sautees: 400,
+  frites_friteuse: 550, moules_frites: 380, brandade: 250, poisson_pane: 250, omelette: 140, omelette_fromage: 130,
+  oeufs_brouilles: 140, quiche_poireaux: 150, tarte_tomate: 200, bo_bun: 180, pad_thai: 160, riz_cantonais: 100,
+  nems: 180, sushis: 110,
+  // Spécialités régionales
+  cacasse: 350, salade_lard: 330, boudin_blanc: 150, gateau_mollet: 120, tarte_sucre: 110, choucroute: 200,
+  baeckeoffe: 330, flammekueche: 170, potee: 280, cassoulet: 300, tartiflette: 280, raclette: 250,
+  fondue_savoyarde: 120, aligot: 280, truffade: 340, petit_sale: 300, carbonade: 280, potjevleesch: 280,
+  welsh: 150, flamiche: 180, andouillette: 200, bouillabaisse: 300, pissaladiere: 220, galette_complete: 200,
+  kouign_amann: 80, far_breton: 230, gateau_basque: 110, canele: 120,
+  // Entrées, salades & soupes
+  salade_cesar: 240, salade_nicoise: 270, salade_pates: 160, salade_piemontaise: 300, taboule: 170,
+  carottes_rapees: 230, celeri_remoulade: 250, oeuf_mayo: 100, soupe_oignon: 130, veloute_potiron: 230,
+  soupe_poireaux: 220, gaspacho: 230, cake_sale: 160, gougeres: 110, feuillete_saucisse: 130, guacamole: 430,
+  // Sandwichs & snacking
+  jambon_beurre: 180, croque_monsieur: 170, croque_madame: 170, panini: 180, burger_maison: 230, kebab: 250,
+  tacos: 260, hot_dog: 170, wrap_poulet: 230, pizza_boulangerie: 200, croissant_jambon: 160, feuillete_jambon: 150,
+  friand: 160, sandwich_poulet: 230, sandwich_thon: 210, club_sandwich: 230,
+  // Restaurant & fast-food
+  resto_entrecote: 450, resto_sauce: 30, resto_tartare: 450, resto_burger: 330, resto_plat_jour: 300,
+  resto_poisson: 380, resto_pates: 150, resto_pizza: 200, resto_salade: 270, resto_croque: 210, resto_magret: 380,
+  resto_tartare_saumon: 330, resto_fish_chips: 380, resto_couscous: 230, resto_kebab_assiette: 330,
+  resto_menu_fastfood: 300, resto_nuggets: 250, resto_sushi: 110, resto_ramen: 120, resto_pho: 120,
+  resto_chinois: 180, resto_indien: 220, resto_naan: 150, resto_cafe_gourmand: 200, resto_moelleux: 280,
+  // Charcuterie & traiteur
+  pate_campagne: 200, pate_croute: 180, rillettes: 200, mousse_foie: 200, foie_gras: 140, boudin_noir: 70,
+  jambon_persille: 280, fromage_tete: 120, saucisse_toulouse: 250, merguez: 250, chipolata: 250, andouille: 200,
+  chorizo: 450, bacon: 300,
+  // Desserts & gâteaux maison
+  gateau_chocolat: 300, gateau_yaourt: 120, quatre_quarts: 90, marbre: 150, cake_fruits: 200, brownie: 320,
+  cookies: 200, madeleine: 100, financier: 220, cheesecake: 120, tarte_pommes: 120, tarte_tatin: 120,
+  tarte_fraises: 150, tarte_citron: 90, clafoutis: 170, crumble_pommes: 130, flan_patissier: 140,
+  creme_brulee: 100, creme_caramel: 150, mousse_chocolat: 330, ile_flottante: 160, riz_au_lait: 140,
+  tiramisu: 140, panna_cotta: 100, fraisier: 130, foret_noire: 180, buche_noel: 150, galette_rois: 220,
+  crepe_nature: 140, crepe_sucre: 120, crepe_nutella: 200, gaufre: 120, pancakes: 140, pain_perdu: 150,
+  salade_fruits: 200, glace_vanille: 200, sorbet: 100,
+  // Pâtisseries & viennoiseries
+  pain_chocolat: 180, chausson_pommes: 100, pain_raisins: 200, brioche: 120, chouquettes: 110, beignet: 100,
+  eclair: 150, paris_brest: 230, mille_feuille: 110, profiteroles: 150
+};
+
 (function ajouterPlats() {
   const add = ([id, nom, cat, v, o = {}], plat) => {
     if (ALIMENTS.some(a => a.id === id)) return;
     const [kcal, p, g, l, sel, ags, suc] = v;
-    const a = { id, nom, cat, kcal, p, g, l, sel, ags, suc };
+    const a = { id, nom, cat, kcal, p, g, l, sel, ags, suc, fib: FIBRES_PLATS[id] || 0, pot: POTASSIUM_PLATS[id] || 0 };
     if (plat) a.plat = true;           // valeur moyenne d'une recette type
+    else a.ingredient = true;          // ingrédient de cuisine (farine, pâte crue…) : pas une suggestion de remplacement
     if (o.v) a.viande = true;          // contient viande ou poisson
     if (o.G) a.gluten = true;
     if (o.L) a.lactose = true;

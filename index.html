@@ -147,6 +147,7 @@
       </div>
     </div>
 
+    <div class="sv-backup" id="sv-backup" hidden></div>
     <div class="sv-gauges" id="sv-gauges"></div>
     <div class="sv-sticky" id="sv-sticky" aria-hidden="true"></div>
 
@@ -211,7 +212,7 @@
         <div class="card" id="sv-insights"></div>
         <div class="card" id="sv-week"></div>
         <div class="card" id="sv-limits-card">
-          <h3>🎯 Mes limites par jour</h3>
+          <h3>🎯 Mes limites & objectifs par jour</h3>
           <p class="small-note" style="margin-top:0">Si votre médecin ou diététicien(ne) vous a donné des chiffres, saisissez-les :
             ils priment sur les repères.</p>
           <div class="sv-presets" id="sv-presets"></div>
@@ -459,6 +460,7 @@
         <label class="check-pill"><input type="checkbox" id="alim-peusel"> 🧂 Pauvre en sel (≤ 0,3 g)</label>
         <label class="check-pill"><input type="checkbox" id="alim-peugras"> 🫒 Pauvre en lipides (≤ 3 g)</label>
         <label class="check-pill"><input type="checkbox" id="alim-peusucre"> 🍬 Pauvre en sucres (≤ 5 g)</label>
+        <label class="check-pill"><input type="checkbox" id="alim-fibres"> 🌾 Source de fibres (≥ 3 g)</label>
         <button class="btn btn-ghost btn-sm" id="alim-new-recette" style="margin-left:auto">🍲 Composer une recette</button>
         <button class="btn btn-primary btn-sm" id="alim-new-food">➕ Ajouter un aliment (étiquette)</button>
       </div>
@@ -466,7 +468,7 @@
     <div class="table-wrap">
       <table class="alim-table" id="alim-table">
         <thead>
-          <tr><th data-sort="nom">Aliment</th><th data-sort="cat">Famille</th><th class="num" data-sort="kcal">kcal</th><th class="num" data-sort="p">Protéines</th><th class="num" data-sort="g">Glucides</th><th class="num sub" data-sort="suc">dont sucres</th><th class="num" data-sort="l">Lipides</th><th class="num sub" data-sort="ags">dont saturés</th><th class="num" data-sort="sel">Sel</th></tr>
+          <tr><th data-sort="nom">Aliment</th><th data-sort="cat">Famille</th><th class="num" data-sort="kcal">kcal</th><th class="num" data-sort="p">Protéines</th><th class="num" data-sort="g">Glucides</th><th class="num sub" data-sort="suc">dont sucres</th><th class="num" data-sort="l">Lipides</th><th class="num sub" data-sort="ags">dont saturés</th><th class="num" data-sort="fib">Fibres</th><th class="num" data-sort="pot">Potassium</th><th class="num" data-sort="sel">Sel</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -539,6 +541,8 @@
         <div class="form-row"><label for="ff-suc">dont sucres (g)</label><input type="number" id="ff-suc" min="0" step="any" value="0"></div>
         <div class="form-row"><label for="ff-sel">Sel (g)</label><input type="number" id="ff-sel" min="0" step="any" value="0"></div>
         <div class="form-row"><label for="ff-sodium">… ou sodium (mg)</label><input type="number" id="ff-sodium" min="0" step="any" placeholder="converti en sel ×2,5"></div>
+        <div class="form-row"><label for="ff-fib">Fibres (g, si indiquées)</label><input type="number" id="ff-fib" min="0" step="any" value="0"></div>
+        <div class="form-row"><label for="ff-pot">Potassium (mg, si indiqué)</label><input type="number" id="ff-pot" min="0" step="any" value="0"></div>
       </div>
       <div class="ff-grid">
         <div class="form-row"><label for="ff-cat">Famille</label><select id="ff-cat"></select></div>

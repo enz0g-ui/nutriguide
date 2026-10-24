@@ -38,7 +38,11 @@ function snapshot(a) {
 }
 function entryNutrition(e) {
   const n = {};
-  NUTRI_KEYS.forEach(k => { n[k] = (e.n[k] || 0) * e.g / 100; });
+  NUTRI_KEYS.forEach(k => {
+    let v = e.n[k];
+    if (v === undefined && ALIMENTS_MAP[e.id]) v = ALIMENTS_MAP[e.id][k]; // ex. fibres des jours notés avant leur ajout
+    n[k] = (v || 0) * e.g / 100;
+  });
   return n;
 }
 function sumEntries(entries) {
@@ -103,6 +107,7 @@ function renderSuivi() {
   renderWeek();
   renderLimitsForm();
   renderHomeToday();
+  renderBackupReminder();
 }
 
 function gaugeHtml(k, val, lim, big) {
@@ -111,11 +116,24 @@ function gaugeHtml(k, val, lim, big) {
   const pct = lim > 0 ? Math.min(100, val / lim * 100) : 0;
   const reste = lim - val;
   const msg = st === "over"
-    ? `Dépassé de <strong>${fmtG(-reste, L.dec || 1)} g</strong>`
-    : `Reste <strong>${fmtG(Math.max(0, reste), L.dec)} g</strong>`;
-  return `<div class="gauge ${st} ${big ? "big" : ""} ${k === "ags" || k === "suc" ? "sub" : ""}">
+    ? `Dépassé de <strong>${fmtG(-reste, L.dec || (U(k) === "mg" ? 0 : 1))} ${U(k)}</strong>`
+    : `Reste <strong>${fmtG(Math.max(0, reste), L.dec)} ${U(k)}</strong>`;
+  return `<div class="gauge ${st} ${big ? "big" : ""} ${["ags", "suc", "pot"].includes(k) ? "sub" : ""}">
     <div class="gauge-head"><span class="gauge-name">${L.emoji} ${L.nom}</span>
-      <span class="gauge-val"><strong>${fmtG(val, L.dec)}</strong> / ${fmtG(lim, L.dec)} g</span></div>
+      <span class="gauge-val"><strong>${fmtG(val, L.dec)}</strong> / ${fmtG(lim, L.dec)} ${U(k)}</span></div>
+    <div class="gauge-track"><div class="gauge-bar" style="width:${pct.toFixed(1)}%"></div></div>
+    <div class="gauge-msg">${msg}</div>
+  </div>`;
+}
+/* Jauge d'un objectif à atteindre : se remplit, devient verte une fois atteint */
+function goalGaugeHtml(k, val, target) {
+  const L = LIMITE_LABELS[k];
+  const st = goalStatus(val, target);
+  const pct = target > 0 ? Math.min(100, val / target * 100) : 0;
+  const msg = st === "done" ? `<strong>Objectif atteint</strong> ✓` : `Encore <strong>${fmtG(Math.max(0, target - val), 0)} ${U(k)}</strong>`;
+  return `<div class="gauge goal ${st} sub">
+    <div class="gauge-head"><span class="gauge-name">${L.emoji} ${L.nom}</span>
+      <span class="gauge-val"><strong>${fmtG(val, 0)}</strong> / ${fmtG(target, 0)} ${U(k)}</span></div>
     <div class="gauge-track"><div class="gauge-bar" style="width:${pct.toFixed(1)}%"></div></div>
     <div class="gauge-msg">${msg}</div>
   </div>`;
@@ -128,11 +146,13 @@ function renderGauges() {
     gaugeHtml("sel", t.sel, lim.sel, true) +
     `<div class="gauge-pair">${gaugeHtml("l", t.l, lim.l)}${gaugeHtml("ags", t.ags, lim.ags)}</div>` +
     `<div class="gauge-pair">${gaugeHtml("g", t.g, lim.g)}${gaugeHtml("suc", t.suc, lim.suc)}</div>` +
+    `<div class="gauge-pair goals">${goalGaugeHtml("p", t.p, lim.p)}${goalGaugeHtml("fib", t.fib, lim.fib)}${
+      LIMITE_LABELS.pot.goal ? goalGaugeHtml("pot", t.pot, lim.pot) : gaugeHtml("pot", t.pot, lim.pot)}</div>` +
     `<div class="gauge kcal-gauge">
       <div class="gauge-head"><span class="gauge-name">🔥 Énergie</span>
       <span class="gauge-val"><strong>${fmtKcal(t.kcal)}</strong> / ${fmtKcal(kcalTarget)} kcal</span></div>
       <div class="gauge-track"><div class="gauge-bar" style="width:${Math.min(100, t.kcal / kcalTarget * 100).toFixed(1)}%"></div></div>
-      <div class="gauge-msg">Protéines ${fmtG(t.p, 0)} g · lipides ${t.kcal ? Math.round(t.l * 9 / t.kcal * 100) : 0} % des kcal · glucides ${t.kcal ? Math.round(t.g * 4 / t.kcal * 100) : 0} %</div>
+      <div class="gauge-msg">Protéines ${t.kcal ? Math.round(t.p * 4 / t.kcal * 100) : 0} % des kcal · lipides ${t.kcal ? Math.round(t.l * 9 / t.kcal * 100) : 0} % · glucides ${t.kcal ? Math.round(t.g * 4 / t.kcal * 100) : 0} %</div>
     </div>`;
 }
 
@@ -155,6 +175,8 @@ function renderMeals() {
           <span class="v-sel">${fmtG(en.sel, 2)} g sel</span>
           <span class="v-l">${fmtG(en.l, 1)} g lip.</span>
           <span class="v-g">${fmtG(en.g, 1)} g gluc.</span>
+          <span class="v-p">${fmtG(en.p, 0)} g prot.</span>
+          <span class="v-fib">${fmtG(en.fib, 1)} g fib.</span>
           <span class="v-kcal">${fmtKcal(en.kcal)} kcal</span>
         </span>
         <button class="food-del sv-del" data-meal="${type}" data-idx="${idx}" title="Retirer">✕</button>
@@ -162,7 +184,7 @@ function renderMeals() {
     }).join("");
     return `<div class="day-card sv-meal">
       <div class="day-head"><h3>${label}</h3>
-        <span class="sv-meal-tot">${entries.length ? `🧂 ${fmtG(n.sel, 1)} g · 🫒 ${fmtG(n.l, 0)} g · ⚡ ${fmtG(n.g, 0)} g · ${fmtKcal(n.kcal)} kcal` : ""}</span>
+        <span class="sv-meal-tot">${entries.length ? `🧂 ${fmtG(n.sel, 1)} g · 🫒 ${fmtG(n.l, 0)} g · ⚡ ${fmtG(n.g, 0)} g · 💪 ${fmtG(n.p, 0)} g · 🌾 ${fmtG(n.fib, 0)} g · ${fmtKcal(n.kcal)} kcal` : ""}</span>
         <button class="link-btn sv-pick-meal" data-meal="${type}" title="Ajouter à ce repas">+ ajouter</button>
       </div>
       <div class="day-body">${rows || `<div class="empty-meal">Rien de noté.</div>`}</div>
@@ -219,10 +241,12 @@ function renderPreview() {
   box.innerHTML = `<div class="sv-preview-line">
       <strong>${fmtG(g2, g2 < 10 ? 1 : 0)} g de ${escapeHtml(food.nom)}</strong> :
       🧂 ${fmtG(n.sel, 2)} g sel · 🫒 ${fmtG(n.l, 1)} g lipides (dont ${fmtG(n.ags, 1)} sat.) ·
-      ⚡ ${fmtG(n.g, 1)} g glucides (dont ${fmtG(n.suc, 1)} sucres) · ${fmtKcal(n.kcal)} kcal
+      ⚡ ${fmtG(n.g, 1)} g glucides (dont ${fmtG(n.suc, 1)} sucres) · 💪 ${fmtG(n.p, 1)} g protéines ·
+      🌾 ${fmtG(n.fib, 1)} g fibres · 🍌 ${fmtG(n.pot, 0)} mg potassium · ${fmtKcal(n.kcal)} kcal
     </div>
     <div class="sv-preview-after">Après ajout : ${after.map(a =>
-      `<span class="lim-chip ${a.st}">${LIMITE_LABELS[a.k].emoji} ${fmtG(a.v, LIMITE_LABELS[a.k].dec)}/${fmtG(lim[a.k], LIMITE_LABELS[a.k].dec)}</span>`).join(" ")}</div>
+      `<span class="lim-chip ${a.st}">${LIMITE_LABELS[a.k].emoji} ${fmtG(a.v, LIMITE_LABELS[a.k].dec)}/${fmtG(lim[a.k], LIMITE_LABELS[a.k].dec)}</span>`).join(" ")}
+      ${OBJ_KEYS.map(k => trackChipHtml(k, t[k] + n[k], lim[k])).join(" ")}</div>
     ${portionChipsHtml(food)}
     ${food.cat === "Restaurant & fast-food" ? `<div class="small-note sv-plat-note">🍽️ Valeur moyenne d'une assiette servie, sel du restaurant compris.
       Pour limiter : sauce à part, pas de salière, pain avec modération (≈ 0,6 g de sel pour 50 g).</div>` :
@@ -249,11 +273,23 @@ function portionChipsHtml(food) {
 
 /* Alternatives : même famille, nettement moins chargées sur le nutriment visé,
    apport calorique comparable. */
+const SWEET_CATS = ["Desserts & gâteaux maison", "Pâtisseries & viennoiseries", "Sucré & divers"];
+const isSweet = (a) => SWEET_CATS.includes(a.cat) || (a.suc || 0) >= 10;
+/* Même « famille » pour comparer : aliment de base → même famille ; plat → autre plat
+   (restaurant → restaurant, charcuterie → charcuterie, sinon plats maison / régionaux /
+   snacking), et jamais un dessert pour un plat salé ou l'inverse. */
+function comparable(a, food) {
+  if (a.ingredient) return false;
+  if (!food.plat) return a.cat === food.cat;
+  if (!a.plat || isSweet(a) !== isSweet(food)) return false;
+  const apart = ["Restaurant & fast-food", "Charcuterie & traiteur"];
+  return apart.includes(food.cat) ? a.cat === food.cat : !apart.includes(a.cat);
+}
 function alternatives(food, k, max = 3) {
   const ref = food[k] || 0;
   if (ref <= 0) return [];
   return ALIMENTS
-    .filter(a => a.id !== food.id && a.cat === food.cat && a.id !== "sel" && (a[k] || 0) <= ref * 0.5 &&
+    .filter(a => a.id !== food.id && comparable(a, food) && a.id !== "sel" && (a[k] || 0) <= ref * 0.5 &&
       (food.kcal < 30 || (a.kcal >= food.kcal * 0.4 && a.kcal <= food.kcal * 1.8)))
     .sort((a, b) => (a[k] || 0) - (b[k] || 0))
     .slice(0, max);
@@ -301,8 +337,8 @@ function renderInsights() {
   const agg = {};
   entries.forEach(e => {
     const n = entryNutrition(e);
-    const a = (agg[e.id] = agg[e.id] || { id: e.id, nom: e.nom, g: 0, sel: 0, l: 0, ags: 0, gl: 0, suc: 0 });
-    a.g += e.g; a.sel += n.sel; a.l += n.l; a.ags += n.ags; a.gl += n.g; a.suc += n.suc;
+    const a = (agg[e.id] = agg[e.id] || { id: e.id, nom: e.nom, g: 0, sel: 0, l: 0, ags: 0, gl: 0, suc: 0, p: 0, fib: 0 });
+    a.g += e.g; a.sel += n.sel; a.l += n.l; a.ags += n.ags; a.gl += n.g; a.suc += n.suc; a.p += n.p; a.fib += n.fib;
   });
   const list = Object.values(agg);
   const top = (key, totKey) => list.filter(x => x[key] > 0).sort((a, b) => b[key] - a[key]).slice(0, 3)
@@ -329,17 +365,31 @@ function renderInsights() {
     ? `<p class="small-note">Pour ${nextMeal[0] === "col" ? "la" : "le"} ${nextMeal[1].toLowerCase()}, il vous reste
         <strong>${fmtG(Math.max(0, lim.sel - t.sel), 1)} g de sel</strong>,
         <strong>${fmtG(Math.max(0, lim.l - t.l), 0)} g de lipides</strong> et
-        <strong>${fmtG(Math.max(0, lim.g - t.g), 0)} g de glucides</strong>.</p>`
+        <strong>${fmtG(Math.max(0, lim.g - t.g), 0)} g de glucides</strong>${goalsLeftText(t, lim)}.</p>`
+    : "";
+  // Fibres en retard en fin de journée : idées simples
+  const fibTip = svDate === todayISO() && new Date().getHours() >= 16 && t.fib < lim.fib * 0.6
+    ? `<div class="sv-tip goal-tip">🌾 <strong>Fibres : ${fmtG(t.fib, 0)} g sur ${fmtG(lim.fib, 0)} g.</strong>
+        Pour le repas suivant : légumes (≈ 3 g la portion), légumineuses (≈ 8 g pour 100 g), pain complet,
+        un fruit, une poignée d'amandes (≈ 4 g pour 30 g).</div>`
     : "";
 
   box.innerHTML = `<h3>💡 Ce qui pèse aujourd'hui</h3>
-    ${conseil}
+    ${conseil}${fibTip}
     <div class="sv-tops">
       <div class="liste-group"><h3>🧂 Sel</h3><ul>${top("sel", "sel") || "<li>—</li>"}</ul></div>
       <div class="liste-group"><h3>🫒 Lipides</h3><ul>${top("l", "l") || "<li>—</li>"}</ul></div>
       <div class="liste-group"><h3>⚡ Glucides</h3><ul>${top("gl", "g") || "<li>—</li>"}</ul></div>
+      <div class="liste-group goal-group"><h3>💪 Protéines</h3><ul>${top("p", "p") || "<li>—</li>"}</ul></div>
+      <div class="liste-group goal-group"><h3>🌾 Fibres</h3><ul>${top("fib", "fib") || "<li>—</li>"}</ul></div>
     </div>
     ${reste}`;
+}
+
+function goalsLeftText(t, lim) {
+  const parts = OBJ_KEYS.filter(k => LIMITE_LABELS[k].goal && t[k] < lim[k])
+    .map(k => `<strong>${fmtG(lim[k] - t[k], 0)} ${U(k)} de ${LIMITE_LABELS[k].nom.toLowerCase()}</strong>`);
+  return parts.length ? ` ; il manque encore ${parts.join(" et ")} pour vos objectifs` : "";
 }
 
 /* 7 derniers jours (jusqu'à la date affichée) */
@@ -354,23 +404,23 @@ function renderWeek() {
     const bars = totals.map(x => {
       const v = x.t[k];
       const h = max > 0 ? v / max * 100 : 0;
-      const st = x.filled ? limitStatus(v, lim[k]) : "empty";
+      const st = x.filled ? (L.goal ? "goal-" + goalStatus(v, lim[k]) : limitStatus(v, lim[k])) : "empty";
       const dd = isoToDate(x.iso);
-      return `<button class="wk-col ${x.iso === svDate ? "current" : ""}" data-iso="${x.iso}" title="${dd.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : ${x.filled ? fmtG(v, L.dec) + " g" : "non renseigné"}">
+      return `<button class="wk-col ${x.iso === svDate ? "current" : ""}" data-iso="${x.iso}" title="${dd.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : ${x.filled ? fmtG(v, L.dec) + " " + U(k) : "non renseigné"}">
         <span class="wk-bar ${st}" style="height:${h.toFixed(1)}%"></span>
         <span class="wk-day">${dd.toLocaleDateString("fr-FR", { weekday: "narrow" })}</span>
       </button>`;
     }).join("");
-    const okDays = filled.filter(x => x.t[k] <= lim[k]).length;
+    const okDays = filled.filter(x => L.goal ? x.t[k] >= lim[k] * 0.995 : x.t[k] <= lim[k]).length;
     const avg = filled.length ? filled.reduce((s, x) => s + x.t[k], 0) / filled.length : 0;
     return `<div class="wk-row">
-      <div class="wk-label">${L.emoji} ${L.nom}<span>moy. ${fmtG(avg, L.dec)} g · ${okDays}/${filled.length} j ok</span></div>
+      <div class="wk-label">${L.emoji} ${L.nom}<span>moy. ${fmtG(avg, L.dec)} ${U(k)} · ${okDays}/${filled.length} j ok</span></div>
       <div class="wk-chart"><span class="wk-limit" style="bottom:${(lim[k] / max * 100).toFixed(1)}%"></span>${bars}</div>
     </div>`;
   };
   $("#sv-week").innerHTML = `<h3>📅 Mes 7 derniers jours</h3>
-    ${filled.length ? ["sel", "l", "g"].map(row).join("") +
-      `<p class="small-note">Trait pointillé = votre limite. Cliquez sur un jour pour l'ouvrir. C'est la moyenne de la semaine qui compte.</p>`
+    ${filled.length ? ["sel", "l", "g", "p", "fib", "pot"].map(row).join("") +
+      `<p class="small-note">Trait pointillé = votre limite (ou votre objectif pour 💪 et 🌾, à atteindre). Cliquez sur un jour pour l'ouvrir. C'est la moyenne de la semaine qui compte.</p>`
     : `<p class="small-note" style="margin-top:0">L'historique s'affichera dès que vous aurez noté quelques jours.</p>`}`;
 }
 
@@ -381,15 +431,26 @@ function renderLimitsForm() {
     `<button class="chip-btn ${lim.preset === key ? "active" : ""}" data-preset="${key}" title="${escapeHtml(p.info)}">${escapeHtml(p.nom)}</button>`).join("") +
     `<button class="chip-btn ${lim.preset === "perso" ? "active" : ""}" data-preset="perso">Personnalisé</button>`;
   const field = (k, step) => `<label class="sv-lim-field"><span>${LIMITE_LABELS[k].emoji} ${LIMITE_LABELS[k].nom}</span>
-    <input type="number" data-lim="${k}" value="${lim[k]}" min="0" step="${step}"> g</label>`;
+    <input type="number" data-lim="${k}" value="${lim[k]}" min="0" step="${step}"> ${U(k)}</label>`;
   $("#sv-limits-form").innerHTML =
     field("sel", 0.1) + field("l", 1) + field("ags", 1) + field("g", 1) + field("suc", 1) +
+    `<div class="sv-lim-sep">Objectifs à atteindre & potassium</div>` + field("p", 1) + field("fib", 1) +
+    `<label class="sv-lim-field"><span>🍌 Potassium, à compter comme</span>
+      <select data-potmode><option value="goal" ${LIMITE_LABELS.pot.goal ? "selected" : ""}>objectif à atteindre</option>
+      <option value="limit" ${LIMITE_LABELS.pot.goal ? "" : "selected"}>limite à ne pas dépasser</option></select></label>` +
+    field("pot", 100) +
     `<label class="sv-lim-field"><span>🔥 Calories de référence</span>
       <input type="number" data-lim="kcal" value="${lim.kcal || getTarget()}" min="1000" max="4500" step="50"> kcal</label>`;
   const p = LIMITE_PRESETS[lim.preset];
   $("#sv-limits-info").innerHTML = p
     ? `${escapeHtml(p.info)} Calculé pour ${fmtKcal(lim.kcal)} kcal — <button class="inline-link" data-page="besoins">recalculer mes besoins</button>.`
     : "Valeurs personnalisées. Elles s'appliquent aussi au générateur de menus et aux bilans de l'éditeur.";
+  const o = getObjectifs();
+  $("#sv-limits-info").innerHTML += `<br>💪 Protéines : ${o.perso ? "objectif personnalisé" : "repère d'environ 1 g par kilo de poids (saisi dans « Mes besoins »)"} ·
+    🌾 Fibres : ${o.perso ? "objectif personnalisé" : "30 g par jour (repère ANSES)"}.
+    <br>🍌 Potassium : en général bénéfique pour la tension (repère OMS ≥ 3 500 mg/jour). Mais certains traitements
+    cardiaques (IEC, sartans, spironolactone…) ou une fragilité des reins demandent au contraire de le
+    <strong>limiter</strong> : vérifiez avec votre cardiologue et réglez « limite » si besoin.`;
 }
 
 /* Accueil : résumé du jour */
@@ -450,7 +511,7 @@ function openFoodModal(prefill, data) {
       if ((data.missing || []).includes(id)) $("#ff-" + id).value = "";
       else if (v !== undefined && v !== null) $("#ff-" + id).value = v;
     };
-    ["kcal", "p", "l", "ags", "g", "suc", "sel"].forEach(k => set(k, data[k]));
+    ["kcal", "p", "l", "ags", "g", "suc", "sel", "fib", "pot"].forEach(k => set(k, data[k]));
     if (data.cat) $("#ff-cat").value = data.cat;
     if (data.portion) { $("#ff-portion").value = data.portion.g; $("#ff-portion-l").value = data.portion.l || ""; }
     if (data.missing && data.missing.length) {
@@ -463,7 +524,7 @@ function openFoodModal(prefill, data) {
   $("#food-modal").hidden = false;
   $("#ff-nom").focus({ preventScroll: true });
 }
-const FF_LABELS = { kcal: "énergie", p: "protéines", l: "lipides", ags: "saturés", g: "glucides", suc: "sucres", sel: "sel" };
+const FF_LABELS = { kcal: "énergie", p: "protéines", l: "lipides", ags: "saturés", g: "glucides", suc: "sucres", sel: "sel", fib: "fibres", pot: "potassium" };
 function closeFoodModal() { $("#food-modal").hidden = true; }
 
 /* Enregistre (ou met à jour, même id) un aliment personnel et rafraîchit tous les index. */
@@ -499,7 +560,7 @@ function saveCustomFood(e) {
   const food = {
     id, nom, cat: $("#ff-cat").value || "Mes aliments", perso: true,
     kcal: num("#ff-kcal"), p: num("#ff-p"), g: num("#ff-g"), l: num("#ff-l"),
-    ags: num("#ff-ags"), suc: num("#ff-suc"),
+    ags: num("#ff-ags"), suc: num("#ff-suc"), fib: num("#ff-fib"), pot: num("#ff-pot"),
     sel: sodium > 0 && !num("#ff-sel") ? Math.round(sodium * 2.5 / 10) / 100 : num("#ff-sel")
   };
   if (code) food.code = code;
@@ -530,8 +591,11 @@ function exportData() {
   const data = {
     app: "NutriGuide", version: 1, exportedAt: new Date().toISOString(),
     journal: store.get("journal", {}), limites: store.get("limites", null),
-    custom_foods: loadCustomFoods(), recents: store.get("recents", [])
+    custom_foods: loadCustomFoods(), recents: store.get("recents", []),
+    objectifs: store.get("objectifs", null)
   };
+  store.set("last_export", Date.now());
+  renderBackupReminder();
   downloadFile(JSON.stringify(data, null, 2), `nutriguide-suivi-${todayISO()}.json`, "application/json");
 }
 function importData(file) {
@@ -548,6 +612,7 @@ function importData(file) {
       });
       store.set("journal", cur);
       if (data.limites && data.limites.sel > 0) store.set("limites", data.limites);
+      if (data.objectifs && data.objectifs.p > 0) store.set("objectifs", data.objectifs);
       if (Array.isArray(data.custom_foods)) {
         const custom = loadCustomFoods();
         data.custom_foods.forEach(f => {
@@ -570,16 +635,32 @@ function importData(file) {
   reader.readAsText(file);
 }
 function exportCsv() {
-  const lines = ["date;kcal;lipides_g;satures_g;glucides_g;sucres_g;sel_g;proteines_g"];
+  const lines = ["date;kcal;lipides_g;satures_g;glucides_g;sucres_g;sel_g;proteines_g;fibres_g;potassium_mg"];
   for (let i = 29; i >= 0; i--) {
     const iso = isoShift(todayISO(), -i);
     if (!dayEntries(iso).length) continue;
     const t = dayTotals(iso);
     const f = (v, d) => v.toFixed(d).replace(".", ",");
-    lines.push([iso, f(t.kcal, 0), f(t.l, 1), f(t.ags, 1), f(t.g, 1), f(t.suc, 1), f(t.sel, 2), f(t.p, 1)].join(";"));
+    lines.push([iso, f(t.kcal, 0), f(t.l, 1), f(t.ags, 1), f(t.g, 1), f(t.suc, 1), f(t.sel, 2), f(t.p, 1), f(t.fib, 1), f(t.pot, 0)].join(";"));
   }
   if (lines.length === 1) { toast("Aucun jour noté sur les 30 derniers jours"); return; }
   downloadFile("﻿" + lines.join("\r\n"), `nutriguide-30-jours-${todayISO()}.csv`, "text/csv");
+}
+
+/* ---------- Rappel de sauvegarde ----------
+   Les données ne vivent que sur ce téléphone : on propose d'exporter
+   quand des jours ont été notés et que la dernière sauvegarde a plus de 7 jours. */
+function renderBackupReminder() {
+  const el = $("#sv-backup");
+  if (!el) return;
+  const nbJours = Object.keys(store.get("journal", {})).length;
+  const last = store.get("last_export", null);
+  const age = last ? Math.floor((Date.now() - last) / 86400000) : null;
+  if (nbJours < 3 || (age !== null && age < 7)) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = `<span>💾 ${age === null ? "Aucune sauvegarde de votre suivi pour l'instant." : `Dernière sauvegarde il y a ${age} jours.`}
+    Vos données ne sont que sur ce téléphone.</span>
+    <button class="btn btn-primary btn-sm" id="sv-backup-now">Sauvegarder</button>`;
 }
 
 /* ---------- Initialisation ---------- */
@@ -655,11 +736,24 @@ function setupSuivi() {
       if (entry) { entry.g = Math.max(0.1, +gi.value || 0.1); persistJournal(); renderSuivi(); }
       return;
     }
+    const pm = e.target.closest("[data-potmode]");
+    if (pm) {
+      const o = getObjectifs();
+      o.potMode = pm.value;
+      o.pot = pm.value === "limit" ? 2500 : 3500; // valeur de départ, à ajuster selon l'avis médical
+      setObjectifs(o);
+      renderSuivi();
+      return;
+    }
     const li = e.target.closest("[data-lim]");
     if (li) {
       const lim = { ...getLimites() };
       const v = Math.max(0, +li.value || 0);
-      if (li.dataset.lim === "kcal") {
+      if (OBJ_KEYS.includes(li.dataset.lim)) {
+        const o = getObjectifs();
+        o[li.dataset.lim] = Math.max(1, v);
+        setObjectifs(o);
+      } else if (li.dataset.lim === "kcal") {
         // Changer les calories recalcule le préréglage actif (sinon on garde les grammes saisis)
         const kcal = Math.max(1000, Math.min(4500, v || 2000));
         setLimites(LIMITE_PRESETS[lim.preset] ? computePreset(lim.preset, kcal) : { ...lim, kcal });
@@ -693,6 +787,7 @@ function setupSuivi() {
   });
 
   $("#sv-export").addEventListener("click", exportData);
+  $("#sv-backup").addEventListener("click", (e) => { if (e.target.closest("#sv-backup-now")) exportData(); });
   $("#sv-csv").addEventListener("click", exportCsv);
   $("#sv-import").addEventListener("change", (e) => {
     const f = e.target.files && e.target.files[0];

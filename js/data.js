@@ -579,6 +579,79 @@ const ALIMENTS_SUIVI = [
   { id: "vin", nom: "Vin rouge", cat: "Boissons", kcal: 70, p: 0, g: 0.5, l: 0, sel: 0.01, ags: 0, suc: 0.5 }
 ];
 
+
+/* Fibres alimentaires (g pour 100 g), ordres de grandeur Ciqual.
+   Viandes, poissons, œufs, laitages, matières grasses, sucre : 0 (absents de la liste). */
+const FIBRES = {
+  // Fruits
+  pomme: 2.4, banane: 2, orange: 2, poire: 3.1, kiwi: 3, fraise: 2, framboise: 6.5, myrtille: 2.4,
+  raisin: 1, ananas: 1.3, mangue: 1.6, peche: 1.5, abricot: 2, clementine: 1.7, melon: 0.9, pasteque: 0.4,
+  cerise: 1.6, prune: 1.5, figue: 2.5, citron: 2, avocat: 6.7, compote: 1.5, abricot_sec: 7, datte: 7,
+  raisin_sec: 3.7, pruneau: 7,
+  // Légumes
+  carotte: 2.7, tomate: 1.2, courgette: 1, brocoli: 2.6, epinard: 2.2, haricot_vert: 3, poivron: 1.9,
+  concombre: 0.6, salade: 1.3, chou_fleur: 2.2, aubergine: 2.8, champignon: 1.5, poireau: 2.5, oignon: 1.7,
+  betterave: 2.5, potiron: 1.5, asperge: 1.8, endive: 1, celeri: 1.6, petit_pois: 5, mais: 2.5, fenouil: 2.5,
+  soupe_legumes: 1,
+  // Féculents
+  riz_blanc: 0.4, riz_complet: 1.6, pates: 1.5, pates_completes: 4, pain_blanc: 2.7, pain_complet: 7,
+  pain_cereales: 6, pdt: 1.8, patate_douce: 3, quinoa: 2.8, boulgour: 4.5, semoule: 1.2, avoine: 10,
+  muesli: 7.5, biscotte: 4, galette_riz: 3.5, pain_sans_gluten: 5, pain_mie: 3, croissant: 2.3,
+  cereales_pdej: 3, frites: 3,
+  // Légumineuses
+  lentilles: 7.9, pois_chiches: 7.6, haricots_rouges: 7.4, haricots_blancs: 6.5, tofu: 1, houmous: 6,
+  // Laitages végétaux
+  lait_amande: 0.3, yaourt_soja: 0.5, creme_soja: 0.3,
+  // Oléagineux
+  amandes: 12.5, noix: 6.5, noisettes: 9.7, cajou: 3.3, pistaches: 10, cacahuetes: 8.5, beurre_cacahuete: 6,
+  chia: 34, lin: 27, olives: 3.3,
+  // Sucré, sauces, divers
+  chocolat_noir: 11, chocolat_lait: 2.5, confiture: 1, biscuits: 2.5, pain_epices: 2.5, jus_orange: 0.2,
+  sauce_tomate: 1.5, moutarde: 4, sauce_soja: 0.8, bouillon_cube: 0.5, ketchup: 0.8, cornichons: 1.2,
+  chips: 4.5, pizza: 2, quiche: 0.8, lasagnes: 1.2
+};
+
+
+/* Potassium (mg pour 100 g), ordres de grandeur Ciqual. Huiles, sucre, sel, soda : 0 (absents). */
+const POTASSIUM = {
+  // Fruits
+  pomme: 120, banane: 360, orange: 180, poire: 120, kiwi: 290, fraise: 160, framboise: 170, myrtille: 80,
+  raisin: 190, ananas: 120, mangue: 170, peche: 190, abricot: 260, clementine: 170, melon: 300, pasteque: 110,
+  cerise: 220, prune: 170, figue: 230, citron: 140, avocat: 480, compote: 100, abricot_sec: 1100, datte: 650,
+  raisin_sec: 750, pruneau: 730,
+  // Légumes
+  carotte: 270, tomate: 240, courgette: 260, brocoli: 300, epinard: 500, haricot_vert: 220, poivron: 200,
+  concombre: 150, salade: 250, chou_fleur: 300, aubergine: 220, champignon: 320, poireau: 230, oignon: 150,
+  betterave: 320, potiron: 300, asperge: 200, endive: 210, celeri: 260, petit_pois: 250, mais: 220, fenouil: 400,
+  soupe_legumes: 150,
+  // Féculents
+  riz_blanc: 35, riz_complet: 80, pates: 45, pates_completes: 100, pain_blanc: 130, pain_complet: 250,
+  pain_cereales: 220, pdt: 380, patate_douce: 340, quinoa: 170, boulgour: 70, semoule: 50, avoine: 380,
+  muesli: 450, biscotte: 170, galette_riz: 250, pain_sans_gluten: 150, pain_mie: 120, croissant: 130,
+  cereales_pdej: 100, frites: 450,
+  // Légumineuses
+  lentilles: 280, pois_chiches: 230, haricots_rouges: 400, haricots_blancs: 420, tofu: 140, houmous: 230,
+  // Viandes & œufs
+  poulet: 330, dinde: 330, steak5: 320, boeuf_roti: 330, porc_filet: 360, jambon_blanc: 300, jambon_cru: 300,
+  veau: 350, agneau: 250, canard: 270, lapin: 320, oeuf: 130, saucisson: 400, lardons: 250, saucisse: 180,
+  // Poissons
+  saumon: 360, saumon_fume: 280, thon_boite: 250, cabillaud: 340, colin: 320, sardine: 330, maquereau: 320,
+  truite: 400, crevette: 160, dorade: 380, sole: 280, moules: 280, surimi: 80,
+  // Produits laitiers
+  lait_demi: 160, lait_ecreme: 160, lait_amande: 70, yaourt_nature: 170, yaourt_grec: 140, fromage_blanc0: 130,
+  fromage_blanc: 120, skyr: 150, emmental: 100, camembert: 150, chevre: 120, comte: 110, feta: 60,
+  mozzarella: 90, parmesan: 100, beurre: 20, creme_fraiche: 90, creme_legere: 120, yaourt_soja: 150,
+  creme_soja: 120, beurre_demi_sel: 20, roquefort: 90,
+  // Oléagineux
+  amandes: 730, noix: 440, noisettes: 680, cajou: 600, pistaches: 1000, cacahuetes: 700, beurre_cacahuete: 650,
+  chia: 400, lin: 810, olives: 50,
+  // Sucré, sauces, divers
+  chocolat_noir: 720, chocolat_lait: 400, miel: 50, confiture: 80, biscuits: 120, pain_epices: 200,
+  jus_orange: 180, vinaigrette: 20, mayonnaise: 20, sauce_tomate: 350, moutarde: 150, sauce_soja: 200,
+  bouillon_cube: 300, ketchup: 300, cornichons: 100, pizza: 200, quiche: 150, lasagnes: 220, chips: 1200,
+  eau_vichy: 7, biere: 40, vin: 110
+};
+
 (function enrichirAliments() {
   ALIMENTS.forEach(a => {
     const x = NUTRI_PLUS[a.id];
@@ -587,6 +660,10 @@ const ALIMENTS_SUIVI = [
     if (a.suc === undefined) a.suc = x ? x[2] : 0;
   });
   ALIMENTS.push(...ALIMENTS_SUIVI);
+  ALIMENTS.forEach(a => {
+    if (a.fib === undefined) a.fib = FIBRES[a.id] || 0;
+    if (a.pot === undefined) a.pot = POTASSIUM[a.id] || 0;
+  });
   UNITES.sel = { g: 0.4, l: "pincée" };
   UNITES.bouillon_cube = { g: 10, l: "cube" };
   UNITES.croissant = { g: 60, l: "pièce" };
