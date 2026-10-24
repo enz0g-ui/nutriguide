@@ -534,7 +534,7 @@ const NUTRI_PLUS = {
   sardine: [0.3, 2.5, 0], maquereau: [0.2, 3.5, 0], truite: [0.1, 1.2, 0], crevette: [1.5, 0.2, 0],
   dorade: [0.2, 1.2, 0], sole: [0.25, 0.3, 0], moules: [0.7, 0.4, 0], colin: [0.25, 0.2, 0],
   // Produits laitiers
-  lait_demi: [0.1, 1, 4.8], lait_ecreme: [0.1, 0.1, 4.8], lait_amande: [0.12, 0.1, 0.2],
+  lait_demi: [0.1, 1, 4.8], lait_ecreme: [0.1, 0.1, 4.7], lait_amande: [0.12, 0.1, 0.2],
   yaourt_nature: [0.13, 0.8, 4.7], yaourt_grec: [0.1, 6.5, 4], fromage_blanc0: [0.1, 0.1, 4],
   fromage_blanc: [0.1, 2, 3.8], skyr: [0.1, 0.1, 4], emmental: [0.6, 18, 0], camembert: [1.6, 14, 0],
   chevre: [1.6, 15, 0], feta: [3.0, 14, 0.5], mozzarella: [0.5, 12, 1], parmesan: [1.6, 19, 0],

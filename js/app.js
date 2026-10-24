@@ -506,12 +506,12 @@ function regimesActifs() {
   };
 }
 function isMeatOrFish(a) {
-  return a.cat === "Poissons & fruits de mer" || (a.cat === "Viandes & œufs" && a.id !== "oeuf");
+  return !!a.viande || a.cat === "Poissons & fruits de mer" || (a.cat === "Viandes & œufs" && a.id !== "oeuf");
 }
 function foodOkForRegimes(a, reg) {
   if (reg.vegetarien && isMeatOrFish(a)) return false;
-  if (reg.sansGluten && GLUTEN_IDS.has(a.id)) return false;
-  if (reg.sansLactose && LACTOSE_IDS.has(a.id)) return false;
+  if (reg.sansGluten && (GLUTEN_IDS.has(a.id) || a.gluten)) return false;
+  if (reg.sansLactose && (LACTOSE_IDS.has(a.id) || a.lactose)) return false;
   return true;
 }
 /* Adapte un repas type aux régimes cochés : substitue quand c'est possible
@@ -1312,6 +1312,8 @@ function setupAliments() {
     renderAliments();
   });
   $("#alim-table tbody").addEventListener("click", (e) => {
+    const edit = e.target.closest(".recette-edit");
+    if (edit) { if (typeof openRecetteModal === "function") openRecetteModal(ALIMENTS_MAP[edit.dataset.id]); return; }
     const del = e.target.closest(".perso-del");
     if (del && typeof deleteCustomFood === "function") deleteCustomFood(del.dataset.id);
   });
@@ -1335,7 +1337,7 @@ function renderAliments() {
   const peuSel = $("#alim-peusel").checked, peuGras = $("#alim-peugras").checked, peuSucre = $("#alim-peusucre").checked;
   const { key, dir } = alimSort;
   const rows = ALIMENTS
-    .filter(a => (!cat || a.cat === cat) && (!q || a.nom.toLowerCase().includes(q)) && foodOkForRegimes(a, reg))
+    .filter(a => (!cat || a.cat === cat) && (!q || (a.nom + " " + (a.alias || "")).toLowerCase().includes(q)) && foodOkForRegimes(a, reg))
     .filter(a => (!peuSel || a.sel <= SEUILS_100G.sel.bas) && (!peuGras || a.l <= SEUILS_100G.l.bas) && (!peuSucre || a.suc <= SEUILS_100G.suc.bas))
     .sort((a, b) => (key === "nom" || key === "cat")
       ? dir * String(a[key]).localeCompare(String(b[key]), "fr")
@@ -1348,7 +1350,7 @@ function renderAliments() {
   const v = (x) => (x || 0).toLocaleString("fr-FR", { maximumFractionDigits: 2 });
   $("#alim-table tbody").innerHTML = rows.map(a => `
     <tr>
-      <td class="td-nom">${escapeHtml(a.nom)}${a.perso ? ` <span class="perso-tag">perso</span> <button class="perso-del" data-id="${a.id}" title="Supprimer cet aliment personnel">🗑</button>` : ""}</td>
+      <td class="td-nom">${escapeHtml(a.nom)}${a.plat ? ` <span class="plat-tag" title="Valeur moyenne d'une recette type">moyenne</span>` : ""}${a.recette ? ` <span class="perso-tag">ma recette</span> <button class="perso-del recette-edit" data-id="${a.id}" title="Modifier la recette">✏️</button>` : a.perso ? ` <span class="perso-tag">perso</span>` : ""}${a.perso ? ` <button class="perso-del" data-id="${a.id}" title="Supprimer">🗑</button>` : ""}</td>
       <td class="cat-cell">${escapeHtml(a.cat)}</td>
       <td class="num" data-label="kcal"><strong>${v(a.kcal)}</strong></td>
       <td class="num" data-label="Prot.">${v(a.p)} g</td>

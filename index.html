@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#27865a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -170,7 +170,7 @@
             <div class="control grow">
               <label for="sv-food">Aliment</label>
               <div class="sv-ac-wrap">
-                <input type="search" id="sv-food" placeholder="Ex. pain, jambon, comté…" autocomplete="off" autocapitalize="off" enterkeyhint="next">
+                <input type="search" id="sv-food" placeholder="Ex. pain, bourguignon, tarte…" autocomplete="off" autocapitalize="off" enterkeyhint="next">
                 <div class="sv-ac" id="sv-ac" role="listbox" hidden></div>
                 <button type="button" class="sv-scan-btn" id="sv-scan" title="Scanner un code-barres" aria-label="Scanner un code-barres">📷</button>
               </div>
@@ -190,7 +190,10 @@
             <button class="chip-btn" data-salt="0.4">🧂 1 pincée · 0,4 g</button>
             <button class="chip-btn" data-salt="1.5">🧂 ¼ c. à café · 1,5 g</button>
             <button class="chip-btn" data-salt="3">🧂 ½ c. à café · 3 g</button>
-            <button class="link-btn" id="sv-new-food">Aliment absent ? Le créer depuis son étiquette →</button>
+            <span class="sv-new-links">
+              <button class="link-btn" id="sv-new-recette">🍲 Plat maison ? Composer la recette →</button>
+              <button class="link-btn" id="sv-new-food">🏷️ Produit absent ? Le créer depuis son étiquette →</button>
+            </span>
           </div>
           <div class="sv-recents" id="sv-recents"></div>
         </div>
@@ -456,7 +459,8 @@
         <label class="check-pill"><input type="checkbox" id="alim-peusel"> 🧂 Pauvre en sel (≤ 0,3 g)</label>
         <label class="check-pill"><input type="checkbox" id="alim-peugras"> 🫒 Pauvre en lipides (≤ 3 g)</label>
         <label class="check-pill"><input type="checkbox" id="alim-peusucre"> 🍬 Pauvre en sucres (≤ 5 g)</label>
-        <button class="btn btn-primary btn-sm" id="alim-new-food" style="margin-left:auto">➕ Ajouter un aliment (étiquette)</button>
+        <button class="btn btn-ghost btn-sm" id="alim-new-recette" style="margin-left:auto">🍲 Composer une recette</button>
+        <button class="btn btn-primary btn-sm" id="alim-new-food">➕ Ajouter un aliment (étiquette)</button>
       </div>
     </div>
     <div class="table-wrap">
@@ -548,6 +552,38 @@
   </div>
 </div>
 
+<!-- Composer ma recette -->
+<div class="modal-overlay" id="recette-modal" hidden>
+  <div class="modal recette-modal" role="dialog" aria-labelledby="recette-title">
+    <div class="modal-head">
+      <h2 id="recette-title">🍲 Composer ma recette</h2>
+      <button class="modal-close" id="recette-close" title="Fermer">✕</button>
+    </div>
+    <form class="modal-body food-form" id="recette-form" autocomplete="off">
+      <p class="liste-sub">Notez les ingrédients du <strong>plat entier</strong>, tels que vous les pesez avant cuisson,
+        puis le nombre de parts : NutriGuide calcule ce que représente une part.</p>
+      <div class="form-row"><label for="rc-nom">Nom du plat</label>
+        <input type="text" id="rc-nom" required maxlength="60" placeholder="Ex. Cacasse de mamie, tarte aux pommes…"></div>
+      <label class="rc-label">Ingrédients</label>
+      <div class="rc-ings" id="rc-ings"></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="rc-add-ing">+ Ajouter un ingrédient</button>
+      <div class="ff-grid rc-grid">
+        <div class="form-row"><label for="rc-parts">Nombre de parts</label>
+          <input type="number" id="rc-parts" min="1" step="1" value="4" inputmode="numeric"></div>
+        <div class="form-row"><label for="rc-poids">Poids du plat cuit (g, optionnel)</label>
+          <input type="number" id="rc-poids" min="0" step="any" inputmode="decimal" placeholder="Ex. 1450"></div>
+      </div>
+      <p class="small-note">La cuisson fait perdre de l'eau : en pesant le plat cuit, la valeur pour 100 g est plus juste
+        (et vous pourrez noter vos portions en grammes). Sans pesée, on compte le poids des ingrédients.</p>
+      <div class="rc-summary" id="rc-summary"></div>
+      <div class="modal-actions" style="padding:12px 0 0;border:none">
+        <button type="submit" class="btn btn-primary btn-sm">Enregistrer la recette</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="rc-delete" hidden>🗑 Supprimer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Scanner de code-barres (Open Food Facts) -->
 <div class="modal-overlay scan-overlay" id="scan-modal" hidden>
   <div class="modal scan-modal" role="dialog" aria-labelledby="scan-title">
@@ -577,9 +613,11 @@
 <datalist id="foods-datalist"></datalist>
 
 <script src="js/data.js"></script>
+<script src="js/plats.js"></script>
 <script src="js/app.js"></script>
 <script src="js/suivi.js"></script>
 <script src="js/mobile.js"></script>
 <script src="js/scan.js"></script>
+<script src="js/recettes.js"></script>
 </body>
 </html>

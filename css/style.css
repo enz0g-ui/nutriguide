@@ -796,16 +796,18 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
   .ss-item.over .ss-lbl { color: var(--over); }
 
   /* --- Feuille d'ajout --- */
+  /* Collée en HAUT de l'écran : le clavier, qui monte du bas, ne la cache plus.
+     --vvh = hauteur réellement visible (clavier déduit), mise à jour par mobile.js */
   .sv-add {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; margin: 0;
-    border-radius: 20px 20px 0 0; border: none; box-shadow: 0 -8px 30px rgba(25, 40, 32, .25);
-    padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
-    max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain;
-    transform: translateY(105%); transition: transform .25s ease; visibility: hidden;
+    position: fixed; left: 0; right: 0; top: 0; z-index: 80; margin: 0;
+    border-radius: 0 0 20px 20px; border: none; box-shadow: 0 8px 30px rgba(25, 40, 32, .25);
+    padding: calc(10px + env(safe-area-inset-top)) 16px 14px;
+    max-height: calc(var(--vvh, 100dvh) - 12px); overflow-y: auto; overscroll-behavior: contain;
+    transform: translateY(-105%); transition: transform .25s ease; visibility: hidden;
   }
-  .sv-add::before {
+  .sv-add::after {
     content: ""; display: block; width: 40px; height: 4px; border-radius: 999px;
-    background: var(--line); margin: -4px auto 8px;
+    background: var(--line); margin: 10px auto -4px;
   }
   body.sheet-open .sv-add { transform: none; visibility: visible; }
   body.sheet-open { overflow: hidden; }
@@ -817,7 +819,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
   .sv-add-row .btn { padding: 13px; font-size: 1.02rem; }
   .sv-qty-row input { flex: 1; width: auto !important; }
   .sv-qty-row select { flex: 1; }
-  .sv-ac { max-height: 42dvh; }
+  .sv-ac { max-height: calc(var(--vvh, 80dvh) * .42); }
   .sv-ac-item { padding: 11px 12px; }
   .chip-btn { padding: 7px 12px; font-size: .86rem; }
   .sv-quick, .sv-recents { gap: 6px; }
@@ -982,4 +984,61 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
   .scan-view { max-height: 40dvh; }
   .scan-actions .btn { flex: 1 1 100%; padding: 11px; }
   .sv-scan-btn { width: 52px; font-size: 1.4rem; }
+}
+
+/* =====================================================
+   Plats maison & « Composer ma recette »
+   ===================================================== */
+.plat-tag {
+  font-size: .7rem; background: var(--warn-bg); color: #8a5300; border-radius: 999px;
+  padding: 1px 7px; font-weight: 600; white-space: nowrap;
+}
+.sv-new-links { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.sv-new-links .link-btn { margin: 0 !important; }
+.sv-portions { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sv-portions .small-note { margin: 0; }
+.sv-plat-note { margin: 6px 0 0; }
+.recette-modal { width: min(640px, 100%); }
+.rc-label { display: block; font-weight: 600; font-size: .92rem; margin: 4px 0 6px; }
+.rc-ing { display: grid; grid-template-columns: 1fr 76px auto auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.rc-ing-search { position: relative; min-width: 0; }
+.rc-ing input, .rc-ing select {
+  width: 100%; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px;
+  font: inherit; background: #fff; min-width: 0;
+}
+.rc-ing select { width: auto; max-width: 140px; }
+.rc-ing input:focus, .rc-ing select:focus { outline: none; border-color: var(--green-500); }
+.rc-ing[data-id=""] .rc-ing-food:not(:placeholder-shown) { border-color: var(--warn); }
+.rc-ac { right: 0 !important; max-height: 260px; }
+.rc-grid { margin-top: 12px; }
+.rc-summary { margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--green-50); font-size: .9rem; }
+.rc-summary .small-note { margin: 6px 0 0; }
+.rc-sum-part { line-height: 1.5; }
+@media (max-width: 760px) {
+  .sv-new-links { margin-left: 0; align-items: flex-start; flex: 1 1 100%; }
+  .recette-modal { max-height: 96dvh; }
+  .rc-ing {
+    grid-template-columns: 1fr 1fr 40px; grid-template-areas: "food food del" "qty unit unit";
+    padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed var(--line);
+  }
+  .rc-ing-search { grid-area: food; }
+  .rc-ing-qty { grid-area: qty; }
+  .rc-ing-unit { grid-area: unit; max-width: none !important; width: 100% !important; }
+  .rc-ing-del { grid-area: del; }
+  .rc-ing input, .rc-ing select { padding: 10px; font-size: 16px; } /* 16 px : pas de zoom auto sur iPhone */
+}
+.rc-ing-del {
+  border: none; background: none; color: var(--red); cursor: pointer; font-size: 1.05rem;
+  padding: 6px 8px; border-radius: 8px;
+}
+.rc-ing-del:hover { background: #fdf0ee; }
+
+/* Fenêtres de saisie (aliment, recette) : en haut de l'écran sur téléphone, au-dessus du clavier */
+@media (max-width: 760px) {
+  #food-modal, #recette-modal { align-items: flex-start; }
+  #food-modal .modal, #recette-modal .modal {
+    border-radius: 0 0 18px 18px; padding-top: env(safe-area-inset-top);
+    max-height: calc(var(--vvh, 100dvh) - 8px);
+  }
+  #food-modal .modal-actions, #recette-modal .modal-actions { padding-bottom: 12px; }
 }

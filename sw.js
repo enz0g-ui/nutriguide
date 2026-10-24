@@ -5,16 +5,18 @@
    le navigateur installe la nouvelle version en arrière-plan et l'app propose
    « Mettre à jour ».
    ⚠️ Incrémenter VERSION à chaque modification des fichiers. */
-const VERSION = "nutriguide-v3";
+const VERSION = "nutriguide-v4";
 const ASSETS = [
   "./",
   "./index.html",
   "./css/style.css",
   "./js/data.js",
+  "./js/plats.js",
   "./js/app.js",
   "./js/suivi.js",
   "./js/mobile.js",
   "./js/scan.js",
+  "./js/recettes.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

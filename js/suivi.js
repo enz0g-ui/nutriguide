@@ -190,7 +190,8 @@ function syncUnitSelect(food) {
     if (rec) { sel.value = "g"; $("#sv-qty").value = rec.g; }
     // Unité proposée d'office seulement pour les petites portions (œuf, tranche, pot…),
     // pas pour une baguette ou un melon entier
-    else if (u && u.g <= 200) { sel.value = "u"; $("#sv-qty").value = 1; }
+    // (et toujours pour un plat ou une recette : on compte en assiettes / parts)
+    else if (u && (u.g <= 200 || food.plat || food.recette)) { sel.value = "u"; $("#sv-qty").value = 1; }
     else { sel.value = "g"; $("#sv-qty").value = 100; }
   }
 }
@@ -202,7 +203,8 @@ function renderPreview() {
   if (!food) {
     box.innerHTML = $("#sv-food").value.trim() && matches.length > 1
       ? `<span class="small-note">Plusieurs aliments correspondent : ${matches.slice(0, 5).map(m => `<button class="chip-btn sv-suggest" data-nom="${escapeHtml(m.nom)}">${escapeHtml(m.nom)}</button>`).join(" ")}</span>`
-      : $("#sv-food").value.trim() ? `<span class="small-note">Aliment introuvable — <button class="inline-link" id="sv-preview-create">le créer depuis son étiquette</button></span>` : "";
+      : $("#sv-food").value.trim() ? `<span class="small-note">Introuvable — <button class="inline-link" id="sv-preview-create">créer l'aliment depuis son étiquette</button>
+        ou, pour un plat fait maison, <button class="inline-link sv-make-recette" data-nom="${escapeHtml($("#sv-food").value.trim())}">composer la recette</button></span>` : "";
     return;
   }
   const n = itemNutrition({ id: food.id, g: g2 });
@@ -221,8 +223,28 @@ function renderPreview() {
     </div>
     <div class="sv-preview-after">Après ajout : ${after.map(a =>
       `<span class="lim-chip ${a.st}">${LIMITE_LABELS[a.k].emoji} ${fmtG(a.v, LIMITE_LABELS[a.k].dec)}/${fmtG(lim[a.k], LIMITE_LABELS[a.k].dec)}</span>`).join(" ")}</div>
+    ${portionChipsHtml(food)}
+    ${food.cat === "Restaurant & fast-food" ? `<div class="small-note sv-plat-note">🍽️ Valeur moyenne d'une assiette servie, sel du restaurant compris.
+      Pour limiter : sauce à part, pas de salière, pain avec modération (≈ 0,6 g de sel pour 50 g).</div>` :
+    food.plat ? `<div class="small-note sv-plat-note">≈ Valeur moyenne d'une recette type (± 20 à 30 % selon la recette).
+      <button class="inline-link sv-make-recette" data-nom="${escapeHtml(food.nom)} (ma recette)">Composer ma version</button></div>` : ""}
     ${overs.length ? `<div class="sv-warn">⚠️ Cela vous ferait dépasser votre limite de ${overs.map(o => LIMITE_LABELS[o.k].nom.toLowerCase()).join(", ")}.
       ${altSuggestionHtml(food, overs[0].k)}</div>` : ""}`;
+}
+
+/* « assiette » → « assiettes », « c. à soupe » et « omelette (2 œufs) » inchangés */
+function plurielFr(l) { return /^[^\s(.]+$/.test(l) && !/[sxz]$/.test(l) ? l + "s" : l; }
+
+/* Boutons de portion rapides : ½, 1, 1 ½, 2 assiettes / parts / pièces */
+function portionChipsHtml(food) {
+  const u = UNITES[food.id];
+  if (!u) return "";
+  const unitOn = $("#sv-unit").value === "u";
+  const qty = +$("#sv-qty").value || 0;
+  const lbl = { 0.5: "½", 1: "1", 1.5: "1 ½", 2: "2" };
+  return `<div class="sv-portions"><span class="regimes-label">Portion :</span> ${[0.5, 1, 1.5, 2].map(f =>
+    `<button type="button" class="chip-btn sv-portion ${unitOn && qty === f ? "active" : ""}" data-f="${f}">${lbl[f]} ${escapeHtml(f >= 2 ? plurielFr(u.l) : u.l)}</button>`).join(" ")}
+    <span class="small-note">(1 = ${fmtG(u.g, u.g < 10 ? 1 : 0)} g)</span></div>`;
 }
 
 /* Alternatives : même famille, nettement moins chargées sur le nutriment visé,
@@ -597,6 +619,8 @@ function setupSuivi() {
       if (a) { addEntry(svDate, $("#sv-meal").value, a, +recent.dataset.g); renderSuivi(); toast(`${a.nom} ajouté`); }
       return;
     }
+    const por = e.target.closest(".sv-portion");
+    if (por) { $("#sv-unit").value = "u"; $("#sv-qty").value = +por.dataset.f; renderPreview(); return; }
     const sug = e.target.closest(".sv-suggest");
     if (sug) { $("#sv-food").value = sug.dataset.nom; renderPreview(); $("#sv-qty").focus(); return; }
     if (e.target.closest("#sv-preview-create") || e.target.closest("#sv-new-food")) {

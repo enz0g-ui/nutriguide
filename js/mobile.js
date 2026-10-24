@@ -119,6 +119,22 @@ document.addEventListener("visibilitychange", () => {
   else renderHomeToday();
 });
 
+/* ---------- Clavier : hauteur réellement visible ----------
+   Quand le clavier s'ouvre, seule la zone au-dessus reste visible : on la
+   mesure pour que la feuille d'ajout et les fenêtres de saisie y tiennent,
+   et on garde le champ actif à l'écran. */
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const syncVvh = () => document.documentElement.style.setProperty("--vvh", Math.round(vv.height) + "px");
+  vv.addEventListener("resize", syncVvh);
+  syncVvh();
+}
+document.addEventListener("focusin", (e) => {
+  if (!isMobileLayout() || !e.target.matches("input, select, textarea")) return;
+  if (!e.target.closest(".sv-add, .modal")) return;
+  setTimeout(() => e.target.scrollIntoView({ block: "nearest" }), 300); // après l'ouverture du clavier
+});
+
 /* ---------- Feuille d'ajout (mobile) ---------- */
 function openAddSheet(meal) {
   if (!$("#page-suivi").classList.contains("active")) showPage("suivi");
@@ -171,7 +187,8 @@ function searchFoods(q, max = 8) {
   const recents = store.get("recents", []).map(r => r.id);
   return ALIMENTS.map(a => {
     const n = norm(a.nom);
-    if (!words.every(w => n.includes(w))) return null;
+    const hay = a.alias ? n + " " + norm(a.alias) : n; // mots-clés en plus (ex. « ardennes »)
+    if (!words.every(w => hay.includes(w))) return null;
     let score = n.startsWith(nq) ? 0 : n.split(/[\s(,'-]+/).some(w => w.startsWith(words[0])) ? 1 : 2;
     const r = recents.indexOf(a.id);
     if (r >= 0) score -= 0.5 - r * 0.01;
@@ -189,9 +206,15 @@ function renderAutocomplete() {
   if (!acItems.length) { box.hidden = true; return; }
   box.innerHTML = acItems.map((a, i) => {
     const feu = (a.sel || 0) <= SEUILS_100G.sel.bas ? "feu-vert" : (a.sel || 0) > SEUILS_100G.sel.haut ? "feu-rouge" : "feu-orange";
+    const u = UNITES[a.id];
+    // Plat ou recette : valeurs pour une portion (plus parlant que pour 100 g)
+    const meta = (a.plat || a.recette) && u
+      ? (() => { const n = itemNutrition({ id: a.id, g: u.g }); return `${fmtKcal(n.kcal)} kcal · ${fmtG(n.sel, 1)} g sel · ${fmtG(n.l, 0)} g lip. · ${fmtG(n.g, 0)} g gluc. <em>/ ${escapeHtml(u.l)} (${fmtG(u.g, 0)} g)</em>`; })()
+      : `${fmtG(a.sel || 0, (a.sel || 0) < 10 ? 2 : 0)} g sel · ${fmtG(a.l, 0)} g lip. · ${fmtG(a.g, 0)} g gluc. <em>/100 g</em>`;
+    const tag = a.recette ? `<span class="perso-tag">ma recette</span>` : a.plat ? `<span class="plat-tag">moyenne</span>` : "";
     return `<button type="button" class="sv-ac-item" role="option" data-i="${i}">
-      <span class="sv-ac-nom">${escapeHtml(a.nom)}</span>
-      <span class="sv-ac-meta"><span class="feu ${feu}"></span>${fmtG(a.sel || 0, (a.sel || 0) < 10 ? 2 : 0)} g sel · ${fmtG(a.l, 0)} g lip. · ${fmtG(a.g, 0)} g gluc. <em>/100 g</em></span>
+      <span class="sv-ac-nom">${escapeHtml(a.nom)} ${tag}</span>
+      <span class="sv-ac-meta"><span class="feu ${feu}"></span>${meta}</span>
     </button>`;
   }).join("");
   box.hidden = false;
