@@ -317,18 +317,20 @@ const ALIMENTS = [
    « gluten » par prudence (contamination croisée fréquente). ---------- */
 const GLUTEN_IDS = new Set([
   "pain_blanc", "pain_complet", "pain_cereales", "pates", "pates_completes",
-  "semoule", "boulgour", "biscotte", "muesli", "avoine", "biscuits", "pain_epices"
+  "semoule", "boulgour", "biscotte", "muesli", "avoine", "biscuits", "pain_epices", "pain_pita", "seitan"
 ]);
 const LACTOSE_IDS = new Set([
   "lait_demi", "lait_ecreme", "yaourt_nature", "yaourt_grec", "fromage_blanc0",
   "fromage_blanc", "skyr", "emmental", "camembert", "chevre", "comte", "feta",
-  "mozzarella", "parmesan", "beurre", "creme_fraiche", "creme_legere", "chocolat_lait"
+  "mozzarella", "parmesan", "beurre", "creme_fraiche", "creme_legere", "chocolat_lait",
+  "halloumi", "ricotta", "cottage"
 ]);
 
 const SUBS_SANS_GLUTEN = {
   pain_blanc: "pain_sans_gluten", pain_complet: "pain_sans_gluten", pain_cereales: "pain_sans_gluten",
   pates: "riz_blanc", pates_completes: "riz_complet",
-  semoule: "quinoa", boulgour: "quinoa", avoine: "quinoa", biscotte: "galette_riz"
+  semoule: "quinoa", boulgour: "quinoa", avoine: "quinoa", biscotte: "galette_riz",
+  pain_pita: "pain_sans_gluten", seitan: "tofu"
 };
 /* ---------- Unités d'achat ----------
    Poids moyen d'une unité (g) et libellé, pour afficher la liste de
@@ -371,6 +373,7 @@ const SAISONS = {
   // Fruits
   fraise: [4, 5, 6, 7, 8], framboise: [6, 7, 8, 9], myrtille: [6, 7, 8, 9], cerise: [5, 6, 7],
   abricot: [6, 7, 8], peche: [6, 7, 8, 9], prune: [7, 8, 9, 10], figue: [7, 8, 9, 10],
+  grenade: [10, 11, 12, 1, 2],
   raisin: [8, 9, 10, 11], melon: [6, 7, 8, 9], pasteque: [6, 7, 8, 9],
   clementine: [11, 12, 1, 2], orange: [11, 12, 1, 2, 3, 4],
   poire: [8, 9, 10, 11, 12, 1, 2], kiwi: [11, 12, 1, 2, 3, 4, 5],
@@ -388,7 +391,8 @@ const SUBS_SANS_LACTOSE = {
   yaourt_nature: "yaourt_soja", yaourt_grec: "yaourt_soja", fromage_blanc0: "yaourt_soja",
   fromage_blanc: "yaourt_soja", skyr: "yaourt_soja",
   beurre: "huile_olive", creme_fraiche: "creme_soja", creme_legere: "creme_soja",
-  chocolat_lait: "chocolat_noir"
+  chocolat_lait: "chocolat_noir",
+  halloumi: "tofu", ricotta: "creme_soja", cottage: "yaourt_soja"
 };
 
 /* ---------- Repas types pour le générateur ----------
@@ -491,7 +495,23 @@ const REPAS = [
   { id: "co16", type: "col", nom: "Banane & chocolat noir", app: ["chrono", "vegetarien", "equilibre"], items: [["banane", 120], ["chocolat_noir", 20]] },
   { id: "di21", type: "diner", nom: "Sole vapeur, épinards & champignons", app: ["chrono", "lowcarb", "dissociee"], items: [["sole", 160], ["epinard", 150], ["champignon", 100], ["huile_olive", 8]] },
   { id: "di22", type: "diner", nom: "Moules marinières & salade", app: ["chrono", "mediterraneen", "lowcarb"], items: [["moules", 250], ["oignon", 40], ["salade", 80], ["vinaigrette", 10]] },
-  { id: "dj24", type: "dej", nom: "Dorade grillée, boulgour & poivrons", app: ["mediterraneen", "equilibre"], items: [["dorade", 150], ["boulgour", 150], ["poivron", 120], ["huile_olive", 10]] }
+  { id: "dj24", type: "dej", nom: "Dorade grillée, boulgour & poivrons", app: ["mediterraneen", "equilibre"], items: [["dorade", 150], ["boulgour", 150], ["poivron", 120], ["huile_olive", 10]] },
+  // ----- Végétal tendance & méditerranéen (oct. 2026) -----
+  { id: "pd22", type: "pdej", nom: "Tartine avocat, œuf & graines de courge", app: ["vegetarien", "equilibre", "mediterraneen"], items: [["pain_complet", 60], ["avocat", 70], ["oeuf", 50], ["graines_courge", 10]] },
+  { id: "pd23", type: "pdej", nom: "Bol cottage cheese, framboises & graines de courge", app: ["vegetarien", "seche", "lowcarb"], items: [["cottage", 200], ["framboise", 100], ["graines_courge", 15]] },
+  { id: "pd24", type: "pdej", nom: "Overnight oats, myrtilles & chia", app: ["vegetarien", "equilibre"], items: [["avoine", 50], ["yaourt_nature", 125], ["lait_demi", 100], ["chia", 10], ["myrtille", 80]] },
+  { id: "dj25", type: "dej", nom: "Bowl tempeh, quinoa, edamame & avocat", app: ["vegetarien", "equilibre", "seche"], items: [["tempeh", 120], ["quinoa", 150], ["edamame", 80], ["avocat", 50], ["carotte", 80]] },
+  { id: "dj26", type: "dej", nom: "Dahl de lentilles corail, épinards & riz complet", app: ["vegetarien", "equilibre"], items: [["lentilles_corail", 220], ["epinard", 100], ["tomate", 100], ["oignon", 50], ["riz_complet", 120]] },
+  { id: "dj27", type: "dej", nom: "Assiette mezze : houmous, pois chiches, crudités & pita", app: ["mediterraneen", "vegetarien"], items: [["houmous", 80], ["pois_chiches", 100], ["tomate", 100], ["concombre", 100], ["olives", 20], ["pain_pita", 70]] },
+  { id: "dj28", type: "dej", nom: "Gros haricots mijotés à la tomate & feta", app: ["mediterraneen", "vegetarien", "equilibre"], items: [["gros_haricots", 200], ["sauce_tomate", 150], ["feta", 40], ["huile_olive", 10], ["pain_complet", 50]] },
+  { id: "dj29", type: "dej", nom: "Poulpe grillé, pommes de terre & salade", app: ["mediterraneen", "seche"], items: [["poulpe", 180], ["pdt", 200], ["salade", 80], ["huile_olive", 15], ["citron", 30]] },
+  { id: "co17", type: "col", nom: "Yaourt grec, grenade & pistaches", app: ["mediterraneen", "vegetarien"], items: [["yaourt_grec", 150], ["grenade", 60], ["pistaches", 15]] },
+  { id: "co18", type: "col", nom: "Edamame & clémentine", app: ["vegetarien", "seche", "equilibre"], items: [["edamame", 100], ["clementine", 70]] },
+  { id: "di23", type: "diner", nom: "Halloumi grillé, boulgour & légumes du soleil", app: ["mediterraneen", "vegetarien"], items: [["halloumi", 80], ["boulgour", 150], ["courgette", 150], ["poivron", 100], ["huile_olive", 10]] },
+  { id: "di24", type: "diner", nom: "Sarrasin, champignons rôtis & œuf", app: ["vegetarien", "equilibre"], items: [["sarrasin", 180], ["champignon", 200], ["oeuf", 50], ["huile_olive", 10]] },
+  { id: "di25", type: "diner", nom: "Maquereau, lentilles & salade", app: ["mediterraneen", "equilibre", "chrono"], items: [["maquereau", 120], ["lentilles", 150], ["salade", 80], ["vinaigrette", 15]] },
+  { id: "di26", type: "diner", nom: "Tofu grillé, brocoli & riz complet sauce sésame", app: ["vegetarien", "equilibre"], items: [["tofu", 150], ["brocoli", 150], ["riz_complet", 150], ["tahini", 10]] },
+  { id: "di27", type: "diner", nom: "Sardines, salade de tomates & pita", app: ["mediterraneen", "chrono"], items: [["sardine", 100], ["tomate", 200], ["huile_olive", 10], ["pain_pita", 60]] },
 ];
 
 /* =====================================================
@@ -576,7 +596,22 @@ const ALIMENTS_SUIVI = [
   { id: "soda", nom: "Soda sucré (type cola)", cat: "Boissons", kcal: 42, p: 0, g: 10.6, l: 0, sel: 0, ags: 0, suc: 10.6 },
   { id: "eau_vichy", nom: "Eau gazeuse riche en sodium (type Vichy)", cat: "Boissons", kcal: 0, p: 0, g: 0, l: 0, sel: 0.43, ags: 0, suc: 0 },
   { id: "biere", nom: "Bière blonde", cat: "Boissons", kcal: 40, p: 0.3, g: 3, l: 0, sel: 0.01, ags: 0, suc: 0.2 },
-  { id: "vin", nom: "Vin rouge", cat: "Boissons", kcal: 70, p: 0, g: 0.5, l: 0, sel: 0.01, ags: 0, suc: 0.5 }
+  { id: "vin", nom: "Vin rouge", cat: "Boissons", kcal: 70, p: 0, g: 0.5, l: 0, sel: 0.01, ags: 0, suc: 0.5 },
+  // Végétal & méditerranéen (ajout oct. 2026)
+  { id: "tempeh", nom: "Tempeh", cat: "Légumineuses", kcal: 195, p: 20, g: 8, l: 11, sel: 0.02, ags: 2.2, suc: 0, fib: 5, pot: 410 },
+  { id: "edamame", nom: "Edamame (fèves de soja, cuites)", cat: "Légumineuses", kcal: 122, p: 11.9, g: 4, l: 5.2, sel: 0.02, ags: 0.6, suc: 2.2, fib: 5.2, pot: 436 },
+  { id: "lentilles_corail", nom: "Lentilles corail (cuites)", cat: "Légumineuses", kcal: 110, p: 8, g: 18, l: 0.5, sel: 0.01, ags: 0.07, suc: 0.5, fib: 4.5, pot: 250 },
+  { id: "gros_haricots", nom: "Gros haricots blancs / de Lima (cuits)", cat: "Légumineuses", kcal: 115, p: 7.8, g: 20, l: 0.4, sel: 0.02, ags: 0.1, suc: 1.5, fib: 7, pot: 500, alias: "butter beans" },
+  { id: "seitan", nom: "Seitan", cat: "Légumineuses", kcal: 140, p: 25, g: 6, l: 2, sel: 0.8, ags: 0.3, suc: 0.5, fib: 1, pot: 100, gluten: true },
+  { id: "tahini", nom: "Tahini (purée de sésame)", cat: "Matières grasses & oléagineux", kcal: 600, p: 18, g: 12, l: 54, sel: 0.1, ags: 7.5, suc: 0.5, fib: 9, pot: 410, alias: "tahin sesame" },
+  { id: "graines_courge", nom: "Graines de courge", cat: "Matières grasses & oléagineux", kcal: 575, p: 30, g: 10, l: 46, sel: 0.02, ags: 8, suc: 1.4, fib: 6.5, pot: 800 },
+  { id: "halloumi", nom: "Halloumi", cat: "Produits laitiers", kcal: 320, p: 22, g: 2, l: 25, sel: 2.8, ags: 17, suc: 2, fib: 0, pot: 100, lactose: true },
+  { id: "ricotta", nom: "Ricotta", cat: "Produits laitiers", kcal: 150, p: 9, g: 3.5, l: 11, sel: 0.25, ags: 7, suc: 3.5, fib: 0, pot: 105, lactose: true },
+  { id: "cottage", nom: "Cottage cheese", cat: "Produits laitiers", kcal: 98, p: 11, g: 3.4, l: 4.3, sel: 0.9, ags: 2.7, suc: 2.7, fib: 0, pot: 100, lactose: true, alias: "fromage frais grains" },
+  { id: "sarrasin", nom: "Sarrasin (cuit)", cat: "Féculents", kcal: 92, p: 3.4, g: 18, l: 0.6, sel: 0.01, ags: 0.1, suc: 0.9, fib: 2.7, pot: 88, alias: "kasha ble noir" },
+  { id: "pain_pita", nom: "Pain pita", cat: "Féculents", kcal: 275, p: 9, g: 55, l: 1.2, sel: 1.0, ags: 0.2, suc: 2, fib: 2.2, pot: 120, gluten: true },
+  { id: "poulpe", nom: "Poulpe (cuit)", cat: "Poissons & fruits de mer", kcal: 160, p: 30, g: 4.4, l: 2.1, sel: 0.7, ags: 0.5, suc: 0, fib: 0, pot: 630 },
+  { id: "grenade", nom: "Grenade", cat: "Fruits", kcal: 83, p: 1.7, g: 14, l: 1.2, sel: 0, ags: 0.1, suc: 13.7, fib: 4, pot: 236 }
 ];
 
 
@@ -674,6 +709,10 @@ const POTASSIUM = {
   UNITES.biere = { g: 250, l: "demi" };
   UNITES.vin = { g: 125, l: "verre" };
   UNITES.soda = { g: 330, l: "canette" };
+  UNITES.pain_pita = { g: 70, l: "pita" };
+  UNITES.tahini = { g: 15, l: "c. à soupe" };
+  UNITES.grenade = { g: 250, l: "pièce" };
+  UNITES.halloumi = { g: 250, l: "bloc" };
 })();
 
 /* Repères nutritionnels (seuils « feu tricolore » pour 100 g, utilisés sur les

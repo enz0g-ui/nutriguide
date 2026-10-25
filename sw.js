@@ -5,7 +5,7 @@
    le navigateur installe la nouvelle version en arrière-plan et l'app propose
    « Mettre à jour ».
    ⚠️ Incrémenter VERSION à chaque modification des fichiers. */
-const VERSION = "nutriguide-v6";
+const VERSION = "nutriguide-v7";
 const ASSETS = [
   "./",
   "./index.html",

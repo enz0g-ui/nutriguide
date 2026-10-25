@@ -38,7 +38,8 @@ const INGREDIENTS_RECETTES = [
 /* Plats : [id, nom, famille, [kcal, p, g, l, sel, ags, suc], { u: [g, "portion"], v: viande/poisson, G: gluten, L: lactose, alias }] */
 const PM = "Plats maison", SR = "Spécialités régionales", ES = "Entrées, salades & soupes",
   SN = "Sandwichs & snacking", DM = "Desserts & gâteaux maison", PV = "Pâtisseries & viennoiseries",
-  RS = "Restaurant & fast-food", CT = "Charcuterie & traiteur";
+  RS = "Restaurant & fast-food", CT = "Charcuterie & traiteur",
+  VG = "Cuisine végétarienne", MD = "Cuisine méditerranéenne";
 const PLATS_MAISON = [
   // ----- Plats mijotés & plats du quotidien -----
   ["boeuf_bourguignon", "Bœuf bourguignon", PM, [140, 15, 3, 7, 0.8, 2.8, 1.2], { u: [300, "assiette"], v: 1, G: 1, alias: "bourguignon" }],
@@ -249,7 +250,77 @@ const PLATS_MAISON = [
   ["eclair", "Éclair au chocolat", PV, [270, 5.5, 30, 14, 0.3, 8, 18], { u: [80, "éclair"], G: 1, L: 1, alias: "cafe" }],
   ["paris_brest", "Paris-Brest", PV, [400, 7, 32, 27.5, 0.3, 12, 22], { u: [100, "pièce"], G: 1, L: 1 }],
   ["mille_feuille", "Mille-feuille", PV, [330, 4.5, 38, 17.8, 0.3, 10, 20], { u: [110, "pièce"], G: 1, L: 1 }],
-  ["profiteroles", "Profiteroles / choux à la crème", PV, [280, 5, 28, 16.5, 0.2, 10, 20], { u: [120, "portion"], G: 1, L: 1 }]
+  ["profiteroles", "Profiteroles / choux à la crème", PV, [280, 5, 28, 16.5, 0.2, 10, 20], { u: [120, "portion"], G: 1, L: 1 }],
+  // ----- Cuisine végétarienne (tendances : légumineuses, bowls, légumes rôtis, « fibermaxxing ») -----
+  ["buddha_bowl", "Buddha bowl (quinoa, pois chiches, avocat, crudités)", VG, [140, 5, 15, 6.5, 0.35, 0.9, 2.5], { u: [400, "bol"], alias: "bowl" }],
+  ["poke_vege", "Poke bowl végé (tofu, edamame, riz)", VG, [135, 6, 18, 4.5, 0.6, 0.6, 3], { u: [400, "bol"], alias: "bowl poke" }],
+  ["dahl", "Dahl de lentilles corail au lait de coco", VG, [115, 5.5, 13, 4.5, 0.45, 3.2, 2], { u: [350, "assiette"], alias: "dal dhal indien" }],
+  ["curry_pois_chiches", "Curry de pois chiches & épinards", VG, [120, 5, 13, 5, 0.5, 2.5, 2.5], { u: [350, "assiette"], alias: "indien" }],
+  ["curry_legumes", "Curry de légumes au lait de coco & riz", VG, [125, 2.8, 17, 5, 0.4, 3.8, 2.5], { u: [400, "assiette"] }],
+  ["chili_sin_carne", "Chili sin carne (haricots rouges)", VG, [95, 5, 13, 2.2, 0.5, 0.3, 3], { u: [350, "assiette"], alias: "chili vegetarien" }],
+  ["falafels", "Falafels maison", VG, [320, 13, 30, 17, 0.9, 2.2, 1.5], { u: [150, "portion (6 falafels)"], alias: "falafel" }],
+  ["pita_falafel", "Pita falafel (crudités, sauce tahini)", VG, [230, 7.5, 28, 9.5, 0.9, 1.4, 3], { u: [300, "pita"], G: 1, alias: "falafel sandwich" }],
+  ["shakshuka", "Shakshuka (œufs pochés, sauce tomate-poivrons)", VG, [95, 5.5, 5.5, 5.5, 0.55, 1.3, 4], { u: [300, "assiette"], alias: "chakchouka oeufs" }],
+  ["gros_haricots_tomate", "Gros haricots blancs mijotés à la tomate & feta", VG, [120, 6, 13, 4.5, 0.55, 1.6, 3], { u: [300, "assiette"], L: 1, alias: "butter beans" }],
+  ["choufleur_roti", "Chou-fleur rôti entier, sauce tahini", VG, [95, 3.8, 5, 6.5, 0.35, 0.9, 2.5], { u: [300, "portion"], alias: "chou fleur" }],
+  ["steak_champignons", "Champignons rôtis façon steak (pleurotes, portobello)", VG, [75, 3.2, 3.5, 5, 0.35, 0.7, 1], { u: [200, "portion"], alias: "pleurote portobello" }],
+  ["burger_vege", "Burger végétarien (galette de légumineuses)", VG, [225, 9, 28, 8, 1.1, 2, 4.5], { u: [250, "burger"], G: 1, L: 1, alias: "veggie" }],
+  ["lasagnes_vege", "Lasagnes aux légumes & ricotta", VG, [125, 6, 12, 5.8, 0.55, 3.2, 3], { u: [350, "part"], G: 1, L: 1 }],
+  ["moussaka_lentilles", "Moussaka végétarienne aux lentilles", VG, [110, 5.5, 10, 5.2, 0.5, 2.4, 3], { u: [350, "part"], L: 1 }],
+  ["gnocchis_pesto", "Gnocchis poêlés, pesto & tomates cerises", VG, [180, 4.5, 25, 6.8, 0.8, 1.5, 2], { u: [300, "assiette"], G: 1, L: 1 }],
+  ["tofu_saute", "Tofu sauté aux légumes, sauce soja", VG, [105, 7, 5, 6.2, 0.9, 0.9, 3], { u: [300, "assiette"], alias: "wok" }],
+  ["tempeh_grille", "Tempeh grillé mariné", VG, [205, 19, 9, 10.5, 0.9, 2, 1.5], { u: [120, "portion"] }],
+  ["pad_thai_tofu", "Pad thaï au tofu", VG, [165, 6, 22, 5.8, 0.9, 0.9, 5], { u: [350, "assiette"], alias: "pad thai" }],
+  ["bibimbap_vege", "Bibimbap végétarien (riz, légumes, œuf)", VG, [125, 5, 18, 3.8, 0.6, 0.8, 2.5], { u: [400, "bol"], alias: "coreen" }],
+  ["ramen_vege", "Ramen végétarien (bouillon miso, tofu)", VG, [75, 3.8, 10, 2, 0.9, 0.3, 1], { u: [500, "bol"], G: 1, alias: "miso nouilles" }],
+  ["tacos_vege", "Tacos végétariens (haricots noirs, maïs, avocat)", VG, [175, 6, 22, 7, 0.75, 1.8, 2.5], { u: [250, "2 tacos"], alias: "mexicain" }],
+  ["galettes_legumes", "Galettes de légumes poêlées (rösti)", VG, [170, 4.5, 16, 9.5, 0.6, 1.4, 2], { u: [150, "portion"], G: 1, alias: "rosti" }],
+  ["galette_sarrasin_vege", "Galette de sarrasin œuf, fromage & épinards", VG, [175, 9, 15, 8.5, 0.85, 4.5, 0.8], { u: [200, "galette"], L: 1, alias: "crepe ble noir" }],
+  ["patate_douce_farcie", "Patate douce rôtie farcie (pois chiches, yaourt)", VG, [115, 3.8, 17, 3.2, 0.3, 0.8, 5], { u: [350, "pièce"], L: 1 }],
+  ["salade_lentilles", "Salade de lentilles, feta & herbes", VG, [140, 7.5, 13, 6.2, 0.45, 1.8, 1.5], { u: [250, "assiette"], L: 1 }],
+  ["salade_haricots", "Salade de haricots mélangés (« dense bean salad »)", VG, [125, 6.5, 14, 4.5, 0.35, 0.6, 2.5], { u: [250, "assiette"], alias: "fibermaxxing bean" }],
+  ["soupe_lentilles", "Soupe de lentilles corail & carottes", VG, [65, 3.5, 9, 1.5, 0.45, 0.2, 2.5], { u: [300, "bol"] }],
+  ["tartine_avocat", "Tartine avocat & œuf (avocado toast)", VG, [220, 8, 18, 12.5, 0.65, 2.4, 1.5], { u: [180, "tartine"], G: 1, alias: "avocado toast" }],
+  ["tartine_houmous", "Tartine houmous, légumes rôtis & graines", VG, [220, 7.5, 24, 10, 0.75, 1.3, 2.5], { u: [170, "tartine"], G: 1 }],
+  ["overnight_oats", "Overnight oats (avoine, yaourt, fruits)", VG, [120, 5, 17, 3.2, 0.08, 1.2, 8], { u: [250, "pot"], G: 1, L: 1, alias: "porridge flocons" }],
+  ["chia_pudding", "Chia pudding (lait végétal, fruits)", VG, [115, 3.5, 11, 6, 0.08, 0.7, 6], { u: [200, "pot"] }],
+  ["smoothie_bowl", "Smoothie bowl (fruits, granola)", VG, [105, 3, 19, 2.2, 0.05, 0.5, 13], { u: [300, "bol"], G: 1, alias: "bowl" }],
+  ["cottage_bowl", "Bol cottage cheese, fruits & noix", VG, [115, 8.5, 8, 5.5, 0.55, 2, 6], { u: [250, "bol"], L: 1, alias: "cottage proteine" }],
+  ["pois_chiches_rotis", "Pois chiches rôtis aux épices", VG, [360, 18, 46, 9, 0.6, 1, 3], { u: [40, "poignée"], alias: "apero snack" }],
+  // ----- Cuisine méditerranéenne -----
+  ["salade_grecque", "Salade grecque (feta, olives, concombre)", MD, [120, 4, 4, 10, 0.95, 4, 3], { u: [250, "assiette"], L: 1, alias: "horiatiki" }],
+  ["taboule_libanais", "Taboulé libanais (persil, boulgour)", MD, [130, 2.5, 11, 8.5, 0.35, 1.2, 1.5], { u: [200, "portion"], G: 1, alias: "tabbouleh taboule" }],
+  ["fattouche", "Fattouche (salade libanaise au pain grillé)", MD, [95, 2, 9, 5.5, 0.4, 0.8, 2.5], { u: [250, "assiette"], G: 1, alias: "fattoush" }],
+  ["salade_pois_chiches", "Salade de pois chiches, tomates & oignon rouge", MD, [125, 5, 14, 5.2, 0.3, 0.7, 2.5], { u: [250, "assiette"] }],
+  ["baba_ganoush", "Baba ganoush (caviar d'aubergine au tahini)", MD, [130, 2.8, 6, 10.5, 0.45, 1.5, 3], { u: [60, "portion"], alias: "caviar aubergine moutabal" }],
+  ["tzatziki", "Tzatziki", MD, [95, 4, 3.5, 7, 0.4, 4.5, 3], { u: [60, "portion"], L: 1 }],
+  ["mezze", "Assiette de mezze (houmous, falafels, taboulé, pita)", MD, [230, 7, 25, 11, 0.85, 1.6, 2.5], { u: [350, "assiette"], G: 1, alias: "libanais" }],
+  ["dolmas", "Feuilles de vigne farcies au riz (dolmas)", MD, [150, 2.5, 18, 7.5, 0.9, 1, 1.5], { u: [100, "portion (5)"], alias: "dolmades" }],
+  ["spanakopita", "Spanakopita (feuilleté épinards-feta)", MD, [230, 8, 18, 14, 1.0, 6, 1.5], { u: [150, "part"], G: 1, L: 1 }],
+  ["briam", "Briam (légumes rôtis à la grecque)", MD, [85, 1.5, 7, 5.5, 0.35, 0.8, 4], { u: [300, "assiette"] }],
+  ["tian_provencal", "Tian provençal", MD, [65, 1.3, 5, 4.4, 0.3, 0.6, 3.5], { u: [250, "portion"], alias: "provence" }],
+  ["caponata", "Caponata sicilienne", MD, [95, 1.5, 8, 6.3, 0.55, 0.9, 6], { u: [150, "portion"], alias: "italien" }],
+  ["imam_bayildi", "Imam bayildi (aubergines fondantes à la tomate)", MD, [90, 1.5, 7, 6.2, 0.4, 0.9, 5], { u: [300, "portion"], alias: "aubergine farcie" }],
+  ["poivrons_farcis", "Poivrons farcis riz, feta & herbes", MD, [110, 3.8, 12, 5, 0.5, 2, 3.5], { u: [300, "portion (2)"], L: 1 }],
+  ["halloumi_grille", "Halloumi grillé & légumes", MD, [160, 9.5, 4, 12, 1.2, 7, 3], { u: [250, "assiette"], L: 1 }],
+  ["pates_norma", "Pâtes alla Norma (aubergine, tomate, ricotta)", MD, [150, 5, 21, 5, 0.5, 1.4, 3], { u: [350, "assiette"], G: 1, L: 1, alias: "italien" }],
+  ["minestrone", "Minestrone", MD, [55, 2.5, 7.5, 1.6, 0.45, 0.3, 2], { u: [350, "bol"], G: 1, alias: "soupe italienne" }],
+  ["soupe_pistou", "Soupe au pistou", MD, [75, 3.2, 9, 2.8, 0.5, 0.7, 1.8], { u: [350, "bol"], G: 1, L: 1, alias: "provence" }],
+  ["fasolada", "Fasolada (soupe grecque de haricots blancs)", MD, [85, 4, 10, 3.2, 0.4, 0.5, 2], { u: [350, "bol"] }],
+  ["couscous_legumes", "Couscous aux légumes & pois chiches", MD, [125, 4.5, 21, 2.6, 0.45, 0.4, 2.5], { u: [400, "assiette"], G: 1, alias: "couscous vegetarien" }],
+  ["socca", "Socca (galette de pois chiches)", MD, [210, 7.5, 21, 10.5, 0.6, 1.5, 0.8], { u: [150, "part"], alias: "nice farinata" }],
+  ["bruschetta", "Bruschetta tomate-basilic", MD, [190, 5.5, 26, 7, 0.75, 1.1, 3], { u: [120, "2 tranches"], G: 1, alias: "italien" }],
+  ["sardines_grillees", "Sardines grillées, filet d'huile d'olive", MD, [215, 23, 0, 13.5, 0.4, 3.2, 0], { u: [150, "portion (4)"], v: 1 }],
+  ["dorade_four", "Dorade au four, tomates, olives & citron", MD, [105, 11, 3, 5.5, 0.45, 1.1, 2], { u: [350, "assiette"], v: 1, alias: "daurade poisson" }],
+  ["maquereau_four", "Maquereau au four & fenouil", MD, [140, 11, 3, 9.5, 0.35, 2.2, 2], { u: [300, "assiette"], v: 1, alias: "poisson gras" }],
+  ["saumon_lentilles", "Saumon grillé, lentilles & herbes", MD, [150, 12, 9, 7, 0.35, 1.3, 1], { u: [350, "assiette"], v: 1, alias: "poisson" }],
+  ["poulpe_grille", "Poulpe grillé, pommes de terre & huile d'olive", MD, [120, 10, 9, 4.8, 0.55, 0.8, 0.6], { u: [350, "assiette"], v: 1, alias: "poulpe" }],
+  ["pates_vongole", "Pâtes aux palourdes (alle vongole)", MD, [155, 8, 21, 4, 0.75, 0.6, 1.2], { u: [350, "assiette"], v: 1, G: 1, alias: "italien coquillages" }],
+  ["souvlaki", "Souvlaki de poulet, pita & tzatziki", MD, [185, 13, 18, 6.8, 0.85, 2, 2], { u: [300, "assiette"], v: 1, G: 1, L: 1, alias: "grec brochette gyros" }],
+  ["pan_bagnat", "Pan bagnat (thon, œuf, légumes, huile d'olive)", MD, [200, 9, 22, 8, 1.0, 1.4, 2.5], { u: [300, "pièce"], v: 1, G: 1, alias: "nice sandwich" }],
+  // Desserts méditerranéens (rangés avec les desserts pour les comparaisons)
+  ["yaourt_grec_miel", "Yaourt grec, miel & noix", DM, [160, 6, 11, 10.5, 0.08, 5, 10.5], { u: [180, "bol"], L: 1, alias: "mediterraneen" }],
+  ["oranges_cannelle", "Salade d'oranges à la cannelle", DM, [50, 0.9, 10, 0.2, 0, 0, 9.5], { u: [200, "portion"], alias: "mediterraneen marocain" }],
 ];
 
 
@@ -296,7 +367,21 @@ const FIBRES_PLATS = {
   pain_perdu: 1, salade_fruits: 1.8, sorbet: 0.8,
   // Pâtisseries & viennoiseries
   pain_chocolat: 2.5, chausson_pommes: 1.5, pain_raisins: 1.8, brioche: 1.8, chouquettes: 1, beignet: 1.5,
-  eclair: 0.8, paris_brest: 1.5, mille_feuille: 0.7, profiteroles: 0.8
+  eclair: 0.8, paris_brest: 1.5, mille_feuille: 0.7, profiteroles: 0.8,
+  // Cuisine végétarienne
+  buddha_bowl: 4, poke_vege: 2.5, dahl: 3.5, curry_pois_chiches: 4.5, curry_legumes: 1.8, chili_sin_carne: 5,
+  falafels: 5, pita_falafel: 4, shakshuka: 1.6, gros_haricots_tomate: 5, choufleur_roti: 2.8, steak_champignons: 2.3,
+  burger_vege: 4, lasagnes_vege: 1.6, moussaka_lentilles: 3, gnocchis_pesto: 1.8, tofu_saute: 1.8, tempeh_grille: 5,
+  pad_thai_tofu: 1.3, bibimbap_vege: 1.8, ramen_vege: 0.8, tacos_vege: 5, galettes_legumes: 2.2,
+  galette_sarrasin_vege: 2, patate_douce_farcie: 3.5, salade_lentilles: 4.5, salade_haricots: 5.5, soupe_lentilles: 2,
+  tartine_avocat: 5, tartine_houmous: 5.5, overnight_oats: 2.5, chia_pudding: 6, smoothie_bowl: 2.5, cottage_bowl: 1.2,
+  pois_chiches_rotis: 15,
+  // Cuisine méditerranéenne
+  salade_grecque: 1.3, taboule_libanais: 3, fattouche: 1.8, salade_pois_chiches: 4.5, baba_ganoush: 3, tzatziki: 0.3,
+  mezze: 5, dolmas: 2.5, spanakopita: 2, briam: 2, tian_provencal: 1.8, caponata: 2.2, imam_bayildi: 3,
+  poivrons_farcis: 1.8, halloumi_grille: 1.3, pates_norma: 2, minestrone: 2, soupe_pistou: 2.8, fasolada: 4,
+  couscous_legumes: 3, socca: 4, bruschetta: 2, dorade_four: 1, maquereau_four: 1.3, saumon_lentilles: 2.5,
+  poulpe_grille: 1, pates_vongole: 1.2, souvlaki: 1.3, pan_bagnat: 2, yaourt_grec_miel: 0.6, oranges_cannelle: 2
 };
 
 
@@ -351,7 +436,22 @@ const POTASSIUM_PLATS = {
   salade_fruits: 200, glace_vanille: 200, sorbet: 100,
   // Pâtisseries & viennoiseries
   pain_chocolat: 180, chausson_pommes: 100, pain_raisins: 200, brioche: 120, chouquettes: 110, beignet: 100,
-  eclair: 150, paris_brest: 230, mille_feuille: 110, profiteroles: 150
+  eclair: 150, paris_brest: 230, mille_feuille: 110, profiteroles: 150,
+  // Cuisine végétarienne
+  buddha_bowl: 300, poke_vege: 220, dahl: 280, curry_pois_chiches: 300, curry_legumes: 220, chili_sin_carne: 330,
+  falafels: 580, pita_falafel: 300, shakshuka: 300, gros_haricots_tomate: 380, choufleur_roti: 320,
+  steak_champignons: 380, burger_vege: 280, lasagnes_vege: 220, moussaka_lentilles: 300, gnocchis_pesto: 250,
+  tofu_saute: 250, tempeh_grille: 400, pad_thai_tofu: 150, bibimbap_vege: 200, ramen_vege: 120, tacos_vege: 330,
+  galettes_legumes: 300, galette_sarrasin_vege: 230, patate_douce_farcie: 340, salade_lentilles: 290,
+  salade_haricots: 380, soupe_lentilles: 230, tartine_avocat: 330, tartine_houmous: 280, overnight_oats: 220,
+  chia_pudding: 180, smoothie_bowl: 260, cottage_bowl: 160, pois_chiches_rotis: 700,
+  // Cuisine méditerranéenne
+  salade_grecque: 200, taboule_libanais: 330, fattouche: 220, salade_pois_chiches: 260, baba_ganoush: 260,
+  tzatziki: 170, mezze: 300, dolmas: 150, spanakopita: 280, briam: 310, tian_provencal: 270, caponata: 250,
+  imam_bayildi: 260, poivrons_farcis: 220, halloumi_grille: 230, pates_norma: 200, minestrone: 220, soupe_pistou: 260,
+  fasolada: 300, couscous_legumes: 200, socca: 280, bruschetta: 220, sardines_grillees: 380, dorade_four: 340,
+  maquereau_four: 380, saumon_lentilles: 380, poulpe_grille: 420, pates_vongole: 180, souvlaki: 260, pan_bagnat: 230,
+  yaourt_grec_miel: 180, oranges_cannelle: 180
 };
 
 (function ajouterPlats() {
@@ -364,7 +464,8 @@ const POTASSIUM_PLATS = {
     if (o.v) a.viande = true;          // contient viande ou poisson
     if (o.G) a.gluten = true;
     if (o.L) a.lactose = true;
-    if (o.alias) a.alias = o.alias;    // mots-clés de recherche supplémentaires
+    const famille = cat === VG ? " vegetarien vege veggie" : cat === MD ? " mediterraneen" + (o.v ? "" : " vegetarien vege") : "";
+    if (o.alias || famille) a.alias = ((o.alias || "") + famille).trim(); // mots-clés de recherche supplémentaires
     ALIMENTS.push(a);
     if (o.u) UNITES[id] = { g: o.u[0], l: o.u[1] };
   };
