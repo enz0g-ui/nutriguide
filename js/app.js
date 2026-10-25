@@ -609,15 +609,31 @@ function pickTemplate(pool, avoidIds) {
 /* Sélection « variété » : privilégie les recettes encore jamais servies cette
    semaine, puis les moins servies (répartition la plus égale possible quand le
    pool est plus petit que 7). À égalité, évite le repas de la veille. */
-function pickTemplateVaried(pool, avoidIds, weekUsed) {
+function pickTemplateVaried(pool, avoidIds, weekUsed, dayMains, weekMains) {
   if (!pool.length) return null;
   const avoid = avoidIds || [];
-  const uses = (x) => weekUsed[x.t.id] || 0;
-  const minUses = Math.min(...pool.map(uses));
-  let candidates = pool.filter(x => uses(x) === minUses);
+  // Pas deux fois le même plat principal dans la journée (dorade midi ET soir)
+  let base = pool.filter(x => !dayMains.has(x.main));
+  if (!base.length) base = pool;
+  // Les recettes les moins servies cette semaine, puis le plat principal le moins servi
+  const score = (x) => (weekUsed[x.t.id] || 0) * 100 + (weekMains[x.main] || 0);
+  const min = Math.min(...base.map(score));
+  let candidates = base.filter(x => score(x) === min);
   const notYesterday = candidates.filter(x => !avoid.includes(x.t.id));
   if (notYesterday.length) candidates = notYesterday;
   return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+/* « Plat principal » d'un repas : l'aliment qui apporte le plus de protéines
+   (dorade, poulpe, lentilles, œuf…) — sert à varier les repas. */
+function mainIngredient(items) {
+  let best = null, bestP = -1;
+  for (const [id, g] of items) {
+    const a = ALIMENTS_MAP[id];
+    const p = a ? (a.p || 0) * g / 100 : 0;
+    if (p > bestP) { bestP = p; best = id; }
+  }
+  return best;
 }
 
 /* Cœur du générateur : produit nbDays journées pour une approche, une cible
@@ -640,10 +656,12 @@ function filterPoolByLimites(pool, kcalRepas, share) {
     );
     return { x, ratio };
   });
-  const ok = scored.filter(s => s.ratio <= 1.15).map(s => s.x);
-  if (ok.length) return ok;
+  // On garde ceux qui passent, complétés par les moins chargés pour qu'il reste
+  // au moins 6 choix : sinon la semaine tourne sur 2 ou 3 repas en boucle.
   scored.sort((a, b) => a.ratio - b.ratio);
-  return scored.slice(0, Math.max(1, Math.ceil(scored.length / 4))).map(s => s.x);
+  const ok = scored.filter(s => s.ratio <= 1.15);
+  const keep = Math.max(ok.length, Math.min(6, scored.length));
+  return scored.slice(0, keep).map(s => s.x);
 }
 
 function generateDays(appKey, target, nbDays, reg, monthOf, prevIds, dayOffset = 0, varier = true) {
@@ -655,12 +673,13 @@ function generateDays(appKey, target, nbDays, reg, monthOf, prevIds, dayOffset =
   let fallbackUsed = false;
   // Compteur d'utilisation par recette, remis à zéro à chaque début de semaine
   // du programme (aligné sur le jour global) — porte le filtre « variété ».
-  let weekUsed = {};
+  let weekUsed = {}, weekMains = {};
 
   for (let d = 0; d < nbDays; d++) {
     const day = newEmptyDay();
+    const dayMains = new Set();
     const month = monthOf ? monthOf(dayOffset + d) : null;
-    if ((dayOffset + d) % 7 === 0) weekUsed = {};
+    if ((dayOffset + d) % 7 === 0) { weekUsed = {}; weekMains = {}; }
     for (const [type] of MEAL_TYPES) {
       const share = approche.repartition[type];
       if (!share) continue;
@@ -676,11 +695,17 @@ function generateDays(appKey, target, nbDays, reg, monthOf, prevIds, dayOffset =
         if (pool.length) fallbackUsed = true;
       }
       if (respectLimites && pool.length) pool = filterPoolByLimites(pool, target * share, share);
+      pool.forEach(x => { x.main = mainIngredient(x.adapt.items); });
       const picked = varier
-        ? pickTemplateVaried(pool, prevIds[type], weekUsed)
+        ? pickTemplateVaried(pool, prevIds[type], weekUsed, dayMains, weekMains)
         : pickTemplate(pool, prevIds[type]);
       if (!picked) continue;
       weekUsed[picked.t.id] = (weekUsed[picked.t.id] || 0) + 1;
+      // Les collations ne comptent pas : une poignée d'amandes n'est pas un « plat »
+      if (type !== "col") {
+        dayMains.add(picked.main);
+        weekMains[picked.main] = (weekMains[picked.main] || 0) + 1;
+      }
       // Mémorise les 2 derniers repas de ce type pour espacer les répétitions
       prevIds[type] = [picked.t.id, ...(prevIds[type] || [])].slice(0, 2);
 
