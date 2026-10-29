@@ -136,7 +136,7 @@ function rcShowAc(row) {
   rcAc = { row, items, index: -1 };
   if (!items.length) return;
   box.innerHTML = items.map((a, i) => `<button type="button" class="sv-ac-item" data-i="${i}">
-    <span class="sv-ac-nom">${escapeHtml(a.nom)}</span>
+    <span class="sv-ac-nom">${escapeHtml(a.nom)}${a.source === "ciqual" ? ` <span class="src-tag">Ciqual</span>` : ""}</span>
     <span class="sv-ac-meta">${fmtKcal(a.kcal)} kcal · ${fmtG(a.l, 0)} g lip. · ${fmtG(a.g, 0)} g gluc. <em>/100 g</em></span></button>`).join("");
   box.hidden = false;
 }
@@ -145,6 +145,7 @@ function rcHideAc() {
   rcAc = { row: null, items: [], index: -1 };
 }
 function rcPick(row, a) {
+  a = ensureFood(a);
   row.dataset.id = a.id;
   row.querySelector(".rc-ing-food").value = a.nom;
   const sel = row.querySelector(".rc-ing-unit");

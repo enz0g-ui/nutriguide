@@ -702,6 +702,11 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
 .sv-ac-nom { font-size: .95rem; color: var(--ink); font-weight: 600; }
 .sv-ac-meta { font-size: .78rem; color: var(--ink-soft); }
 .sv-ac-meta em { font-style: normal; opacity: .7; }
+.src-tag { font-size: .68rem; background: #eef2f7; color: #475569; border-radius: 999px; padding: 1px 7px; font-weight: 600; white-space: nowrap; }
+.src-tag.off { background: #fff4e0; color: #9a5b00; }
+.sv-ac-off { background: #f8fafc; }
+.sv-ac-off .sv-ac-nom { color: var(--green-700); }
+.sv-ac-msg { padding: 9px 12px; font-size: .8rem; color: var(--ink-soft); background: #f8fafc; }
 
 /* Bandeau mise à jour / installation */
 .app-banner {

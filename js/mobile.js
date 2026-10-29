@@ -180,30 +180,101 @@ const norm = (str) => String(str).toLowerCase().normalize("NFD").replace(/[̀-ͯ
 let acItems = [];
 let acIndex = -1;
 
+/* Mots ignorés dans la recherche (« gâteau AUX pommes ») ; pluriels ramenés au singulier */
+const STOP_WORDS = new Set(["a", "au", "aux", "de", "du", "des", "d", "la", "le", "les", "l", "et", "en", "ou", "avec", "un", "une"]);
+const stem = (w) => w.length > 3 ? w.replace(/(s|x)$/, "") : w;
+function queryWords(q) {
+  const words = norm(q.trim()).split(/[\s,'’-]+/).filter(Boolean);
+  const useful = words.filter(w => !STOP_WORDS.has(w));
+  return (useful.length ? useful : words).map(stem);
+}
+
+/* Table Ciqual (js/ciqual.js) : ~3 100 aliments et plats génériques de l'ANSES.
+   Proposés après ceux de l'app ; choisis une fois, ils rejoignent « Mes aliments ». */
+let ciqualIndex = null;
+function ciqualFood(row) {
+  const [code, nom, ci, kcal, p, g, l, ags, suc, sel, fib, pot, fl] = row;
+  return { id: "cq_" + code, nom, cat: CIQUAL_CATS[ci], kcal, p, g, l, ags, suc, sel, fib, pot,
+    gluten: !!(fl & 1), lactose: !!(fl & 2), perso: true, source: "ciqual" };
+}
+function getCiqualIndex() {
+  if (!ciqualIndex && typeof CIQUAL !== "undefined") ciqualIndex = CIQUAL.map(r => ({ r, n: norm(r[1]) }));
+  return ciqualIndex || [];
+}
+/* Un aliment Ciqual choisi devient un aliment perso (mémorisé, utilisable hors ligne) */
+function ensureFood(a) {
+  if (a.source === "ciqual" && !ALIMENTS_MAP[a.id]) {
+    const f = { ...a };
+    delete f.approx;
+    upsertCustomFood(f);
+  }
+  return ALIMENTS_MAP[a.id] || a;
+}
+
 function searchFoods(q, max = 8) {
   const nq = norm(q.trim());
   if (!nq) return [];
-  const words = nq.split(/\s+/).filter(Boolean);
+  const words = queryWords(q);
   const recents = store.get("recents", []).map(r => r.id);
-  return ALIMENTS.map(a => {
+  const startScore = (n) => n.startsWith(nq) ? 0 : n.split(/[\s(,'-]+/).some(w => w.startsWith(words[0])) ? 1 : 2;
+  // Combien de mots de la recherche figurent dans le nom
+  const hits = (hay) => words.reduce((k, w) => k + (hay.includes(w) ? 1 : 0), 0);
+  const local = [];
+  const known = new Set();
+  for (const a of ALIMENTS) {
     const n = norm(a.nom);
+    known.add(n);
     const hay = a.alias ? n + " " + norm(a.alias) : n; // mots-clés en plus (ex. « ardennes »)
-    if (!words.every(w => hay.includes(w))) return null;
-    let score = n.startsWith(nq) ? 0 : n.split(/[\s(,'-]+/).some(w => w.startsWith(words[0])) ? 1 : 2;
+    if (hits(hay) < words.length) continue;
+    let score = startScore(n);
     const r = recents.indexOf(a.id);
     if (r >= 0) score -= 0.5 - r * 0.01;
-    return { a, score };
-  }).filter(Boolean)
-    .sort((x, y) => x.score - y.score || x.a.nom.length - y.a.nom.length)
-    .slice(0, max).map(x => x.a);
+    local.push({ a, score });
+  }
+  local.sort((x, y) => x.score - y.score || x.a.nom.length - y.a.nom.length);
+  const cq = [], near = [];
+  // Familles des aliments qui contiennent le 1er mot (« gâteau » → pâtisseries, desserts)
+  const famille = {};
+  const addFam = (cat, n) => { if (n.includes(words[0])) famille[cat] = (famille[cat] || 0) + 1; };
+  for (const a of ALIMENTS) addFam(a.cat, norm(a.nom));
+  for (const { r, n } of getCiqualIndex()) {
+    addFam(CIQUAL_CATS[r[2]], n);
+    if (known.has(n) || ALIMENTS_MAP["cq_" + r[0]]) continue; // déjà dans l'app
+    const k = hits(n);
+    if (k === words.length) cq.push({ r, score: startScore(n), len: n.length });
+    else if (words.length >= 2 && k >= words.length - 1) near.push({ r, len: n.length });
+  }
+  cq.sort((x, y) => x.score - y.score || x.len - y.len);
+  // Les aliments de l'app d'abord (portions toutes prêtes), puis Ciqual
+  const nLocal = Math.min(local.length, Math.max(max - Math.min(cq.length, 4), Math.ceil(max / 2)));
+  let out = local.slice(0, nLocal).map(x => x.a)
+    .concat(cq.slice(0, max - nLocal).map(x => ciqualFood(x.r)));
+  // Rien trouvé : on propose les plus proches, de la même famille d'abord
+  // (« gâteau aux prunes » → far aux pruneaux, plutôt que pruneaux secs)
+  if (!out.length && near.length) {
+    const fam = (x) => famille[CIQUAL_CATS[x.r[2]]] || 0;
+    near.sort((x, y) => fam(y) - fam(x) || x.len - y.len);
+    out = near.slice(0, 5).map(x => Object.assign(ciqualFood(x.r), { approx: true }));
+  }
+  return out;
 }
-function renderAutocomplete() {
+function renderAutocomplete(fromInput) {
   const q = $("#sv-food").value;
   const exact = ALIMENTS_BY_NAME[q.trim().toLowerCase()];
-  acItems = exact ? [] : searchFoods(q);
+  if (acOff && !fromInput) { renderAcList(acOff.foods, offFooter()); return; }
+  acOff = null;
+  const items = exact ? [] : searchFoods(q, 10);
+  // Recherche élargie aux produits du commerce, à la demande (connexion requise)
+  const foot = !exact && norm(q.trim()).length >= 3
+    ? `<button type="button" class="sv-ac-item sv-ac-off" data-off="1"><span class="sv-ac-nom">🌐 Chercher « ${escapeHtml(q.trim())} » dans les produits du commerce</span><span class="sv-ac-meta">Open Food Facts · connexion Internet</span></button>`
+    : "";
+  renderAcList(items, foot);
+}
+function renderAcList(items, foot) {
+  acItems = items;
   acIndex = -1;
   const box = $("#sv-ac");
-  if (!acItems.length) { box.hidden = true; return; }
+  if (!acItems.length && !foot) { box.hidden = true; return; }
   box.innerHTML = acItems.map((a, i) => {
     const feu = (a.sel || 0) <= SEUILS_100G.sel.bas ? "feu-vert" : (a.sel || 0) > SEUILS_100G.sel.haut ? "feu-rouge" : "feu-orange";
     const u = UNITES[a.id];
@@ -211,17 +282,63 @@ function renderAutocomplete() {
     const meta = (a.plat || a.recette) && u
       ? (() => { const n = itemNutrition({ id: a.id, g: u.g }); return `${fmtKcal(n.kcal)} kcal · ${fmtG(n.sel, 1)} g sel · ${fmtG(n.l, 0)} g lip. · ${fmtG(n.g, 0)} g gluc. <em>/ ${escapeHtml(u.l)} (${fmtG(u.g, 0)} g)</em>`; })()
       : `${fmtG(a.sel || 0, (a.sel || 0) < 10 ? 2 : 0)} g sel · ${fmtG(a.l, 0)} g lip. · ${fmtG(a.g, 0)} g gluc. <em>/100 g</em>`;
-    const tag = a.recette ? `<span class="perso-tag">ma recette</span>` : a.plat ? `<span class="plat-tag">moyenne</span>` : "";
+    const tag = a.recette ? `<span class="perso-tag">ma recette</span>`
+      : a.plat ? `<span class="plat-tag">moyenne</span>`
+      : a.source === "ciqual" ? `<span class="src-tag" title="Table Ciqual de l'ANSES">${a.approx ? "approchant · " : ""}Ciqual</span>`
+      : a.source === "off" ? `<span class="src-tag off">commerce</span>` : "";
     return `<button type="button" class="sv-ac-item" role="option" data-i="${i}">
       <span class="sv-ac-nom">${escapeHtml(a.nom)} ${tag}</span>
       <span class="sv-ac-meta"><span class="feu ${feu}"></span>${meta}</span>
     </button>`;
-  }).join("");
+  }).join("") + (foot || "");
   box.hidden = false;
 }
-function hideAutocomplete() { $("#sv-ac").hidden = true; acItems = []; acIndex = -1; }
+function hideAutocomplete() { $("#sv-ac").hidden = true; acItems = []; acIndex = -1; acOff = null; }
+
+/* ---------- Produits du commerce : recherche Open Food Facts par nom ----------
+   Passe par un petit relais sur l'hébergement Cloudflare (functions/api/off.js) :
+   le moteur de recherche d'Open Food Facts n'accepte pas les appels directs
+   venant d'un autre site. */
+let acOff = null;
+function offFooter() {
+  return acOff && acOff.msg ? `<div class="sv-ac-msg">${acOff.msg}</div>` : "";
+}
+async function searchOFF(q) {
+  acOff = { q, foods: [], msg: "⏳ Recherche dans les produits du commerce…" };
+  renderAcList([], offFooter());
+  let foods = [], msg = "";
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch("api/off?q=" + encodeURIComponent(q), { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (res.status === 404 || res.status === 405) throw new Error("absent");
+    if (!res.ok) throw new Error("busy");
+    const data = await res.json();
+    foods = (data.hits || []).map(h => offToFood(h, h.code)).filter(f => !(f.missing || []).includes("kcal"));
+    msg = foods.length
+      ? `Produits trouvés sur <a href="https://fr.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> — valeurs pour 100 g, à vérifier sur l'emballage.`
+      : "Aucun produit du commerce trouvé. Essayez un autre mot, ou scannez le code-barres.";
+  } catch (e) {
+    msg = !navigator.onLine ? "📴 Pas de connexion : la recherche des produits du commerce demande Internet."
+      : e.message === "absent" ? "La recherche des produits du commerce fonctionne sur nutriguide-fooding.pages.dev."
+      : "Open Food Facts ne répond pas pour le moment. Réessayez dans un instant.";
+  }
+  if (!acOff || acOff.q !== q) return; // la saisie a changé entre-temps
+  acOff = { q, foods, msg };
+  renderAcList(foods, offFooter());
+}
+function pickOffFood(food) {
+  const f = { ...food };
+  if (f.missing) { hideAutocomplete(); closeAddSheet(); openFoodModal("", f); return null; } // valeurs à compléter
+  delete f.missing;
+  upsertCustomFood(uniqueName(f));
+  return ALIMENTS_MAP[f.id];
+}
 function pickAutocomplete(i) {
-  const a = acItems[i];
+  let a = acItems[i];
+  if (!a) return;
+  a = a.source === "off" && !ALIMENTS_MAP[a.id] ? pickOffFood(a) : ensureFood(a);
   if (!a) return;
   $("#sv-food").value = a.nom;
   hideAutocomplete();
@@ -230,8 +347,8 @@ function pickAutocomplete(i) {
   qty.focus({ preventScroll: true });
   try { qty.select(); } catch { /* certains navigateurs refusent select() sur type=number */ }
 }
-$("#sv-food").addEventListener("input", renderAutocomplete);
-$("#sv-food").addEventListener("focus", renderAutocomplete);
+$("#sv-food").addEventListener("input", () => renderAutocomplete(true));
+$("#sv-food").addEventListener("focus", () => renderAutocomplete(false));
 // Choix dans la liste : on sélectionne au « click » (et pas au toucher) pour
 // éviter que le doigt « traverse » la liste qui disparaît et touche le bouton
 // Ajouter situé dessous. Pendant l'appui, la liste ne se ferme pas.
@@ -245,6 +362,7 @@ $("#sv-ac").addEventListener("pointerdown", (e) => {
 $("#sv-ac").addEventListener("click", (e) => {
   const it = e.target.closest(".sv-ac-item");
   acPressing = false;
+  if (it && it.dataset.off) { searchOFF($("#sv-food").value.trim()); return; }
   if (it) pickAutocomplete(+it.dataset.i);
 });
 document.addEventListener("pointerup", () => setTimeout(() => { acPressing = false; }, 400));

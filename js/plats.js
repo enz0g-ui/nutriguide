@@ -213,6 +213,12 @@ const PLATS_MAISON = [
   ["financier", "Financier", DM, [420, 7, 42, 25, 0.2, 12, 32], { u: [35, "financier"], G: 1, L: 1 }],
   ["cheesecake", "Cheesecake", DM, [320, 6, 26, 21.5, 0.5, 12.5, 20], { u: [110, "part"], G: 1, L: 1 }],
   ["tarte_pommes", "Tarte aux pommes", DM, [250, 3, 33, 11.8, 0.3, 6.5, 16], { u: [120, "part"], G: 1, L: 1 }],
+  ["gateau_pommes", "Gâteau aux pommes maison", DM, [270, 4.5, 38, 11, 0.3, 6, 23], { u: [90, "part"], G: 1, L: 1, alias: "moelleux pomme" }],
+  ["gateau_poires", "Gâteau aux poires maison", DM, [265, 4.5, 38, 10.5, 0.3, 6, 23], { u: [90, "part"], G: 1, L: 1, alias: "moelleux poire" }],
+  ["gateau_noix", "Gâteau aux noix", DM, [430, 7, 40, 27, 0.25, 7, 28], { u: [70, "part"], G: 1, L: 1 }],
+  ["gateau_carottes", "Gâteau aux carottes (carrot cake)", DM, [380, 4.5, 44, 20.5, 0.45, 5, 30], { u: [90, "part"], G: 1, L: 1 }],
+  ["banana_bread", "Cake à la banane (banana bread)", DM, [320, 5, 48, 12, 0.5, 3.5, 25], { u: [70, "tranche"], G: 1, L: 1, alias: "gateau banane" }],
+  ["moelleux_amandes", "Gâteau moelleux aux amandes", DM, [420, 8, 42, 24, 0.25, 7, 32], { u: [70, "part"], G: 1, L: 1 }],
   ["tarte_tatin", "Tarte Tatin", DM, [260, 2.5, 36, 11.8, 0.3, 7, 24], { u: [130, "part"], G: 1, L: 1 }],
   ["tarte_fraises", "Tarte aux fraises (crème pâtissière)", DM, [240, 4, 32, 10.8, 0.2, 6, 18], { u: [120, "part"], G: 1, L: 1, alias: "fruits" }],
   ["tarte_citron", "Tarte au citron meringuée", DM, [320, 4.5, 45, 13.5, 0.2, 7.5, 30], { u: [110, "part"], G: 1, L: 1 }],
@@ -361,6 +367,7 @@ const FIBRES_PLATS = {
   // Desserts & gâteaux maison
   gateau_chocolat: 2.5, gateau_yaourt: 1, quatre_quarts: 0.8, marbre: 1.2, cake_fruits: 1.8, brownie: 2.5,
   cookies: 2, madeleine: 0.8, financier: 1.5, cheesecake: 0.5, tarte_pommes: 1.6, tarte_tatin: 1.5,
+  gateau_pommes: 1.5, gateau_poires: 1.8, gateau_noix: 2.2, gateau_carottes: 1.6, banana_bread: 1.8, moelleux_amandes: 2.8,
   tarte_fraises: 1.2, tarte_citron: 0.7, clafoutis: 0.8, crumble_pommes: 1.8, flan_patissier: 0.3,
   mousse_chocolat: 2.5, riz_au_lait: 0.2, tiramisu: 0.5, fraisier: 0.8, foret_noire: 1.5, buche_noel: 1,
   galette_rois: 2, crepe_nature: 0.8, crepe_sucre: 0.7, crepe_nutella: 1.2, gaufre: 1, pancakes: 1,
@@ -429,6 +436,7 @@ const POTASSIUM_PLATS = {
   // Desserts & gâteaux maison
   gateau_chocolat: 300, gateau_yaourt: 120, quatre_quarts: 90, marbre: 150, cake_fruits: 200, brownie: 320,
   cookies: 200, madeleine: 100, financier: 220, cheesecake: 120, tarte_pommes: 120, tarte_tatin: 120,
+  gateau_pommes: 120, gateau_poires: 120, gateau_noix: 200, gateau_carottes: 170, banana_bread: 220, moelleux_amandes: 220,
   tarte_fraises: 150, tarte_citron: 90, clafoutis: 170, crumble_pommes: 130, flan_patissier: 140,
   creme_brulee: 100, creme_caramel: 150, mousse_chocolat: 330, ile_flottante: 160, riz_au_lait: 140,
   tiramisu: 140, panna_cotta: 100, fraisier: 130, foret_noire: 180, buche_noel: 150, galette_rois: 220,
