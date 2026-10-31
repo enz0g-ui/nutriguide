@@ -59,10 +59,47 @@ function dayEntries(iso) {
 function dayTotals(iso) { return sumEntries(dayEntries(iso)); }
 function addEntry(iso, meal, food, g) {
   const day = getDay(iso, true);
-  day[meal].push({ id: food.id, nom: food.nom, g: Math.round(g * 10) / 10, n: snapshot(food), t: Date.now() });
+  const entry = { id: food.id, nom: food.nom, g: Math.round(g * 10) / 10, n: snapshot(food), t: Date.now() };
+  if (food.allege) entry.al = food.allege;
+  day[meal].push(entry);
   rememberRecent(food.id, g);
   persistJournal();
 }
+/* ---------- Version maison, moins salée et moins grasse ----------
+   Les plats « moyens » correspondent à une recette type. Cuisinés maison avec
+   moins de sel et de matières grasses, on retire un pourcentage réglable
+   (par défaut −50 % de sel, −30 % de gras). La case est mémorisée par aliment :
+   cochée une fois pour « Blanquette de veau », elle le reste les fois suivantes. */
+function getAllege() {
+  const a = store.get("allege", {});
+  const pct = (v, d) => Math.min(100, Math.max(0, isFinite(+v) && v !== null && v !== "" ? +v : d));
+  return { sel: pct(a.sel, 50), l: pct(a.l, 30) };
+}
+function allegeOn(id) { return store.get("allege_foods", []).includes(id); }
+function setAllegeOn(id, on) {
+  const ids = store.get("allege_foods", []).filter(x => x !== id);
+  if (on) ids.push(id);
+  store.set("allege_foods", ids);
+}
+/* Utile seulement s'il y a du sel ou du gras à retirer (pas pour une pomme, ni « ma recette » déjà exacte) */
+function allegeEligible(food) {
+  return !!food && !food.recette && food.id !== "sel" && ((food.sel || 0) >= 0.1 || (food.l || 0) >= 2);
+}
+function lightFood(food) {
+  const r = getAllege();
+  const fs = 1 - r.sel / 100, fl = 1 - r.l / 100;
+  const l = (food.l || 0) * fl;
+  return { ...food, sel: (food.sel || 0) * fs, l, ags: (food.ags || 0) * fl,
+    kcal: Math.max(0, (food.kcal || 0) - ((food.l || 0) - l) * 9), allege: { sel: r.sel, l: r.l } };
+}
+/* L'aliment tel qu'il sera noté : allégé si la case est cochée pour lui */
+function effectiveFood(food) {
+  return allegeEligible(food) && allegeOn(food.id) ? lightFood(food) : food;
+}
+function allegeTagHtml(al) {
+  return `<span class="allege-tag" title="Fait maison : ${al.sel} % de sel et ${al.l} % de gras en moins que la recette type">🌿 maison −${al.sel} % sel · −${al.l} % gras</span>`;
+}
+
 function cleanupDay(iso) {
   if (journal[iso] && !dayEntries(iso).length) delete journal[iso];
 }
@@ -169,7 +206,7 @@ function renderMeals() {
       const u = UNITES[e.id];
       const unitHint = u && e.g >= u.g * 0.5 ? `<span class="sv-unit-hint">≈ ${fmtG(e.g / u.g, 1)} ${u.l}</span>` : "";
       return `<div class="sv-row ${heavy.length ? "heavy" : ""}">
-        <span class="sv-row-name">${escapeHtml(e.nom)}${heavy.length ? ` <span class="sv-heavy" title="Pèse ≥ 25 % de votre limite du jour">${heavy.map(k => LIMITE_LABELS[k].emoji).join("")}</span>` : ""}</span>
+        <span class="sv-row-name">${escapeHtml(e.nom)}${e.al ? " " + allegeTagHtml(e.al) : ""}${heavy.length ? ` <span class="sv-heavy" title="Pèse ≥ 25 % de votre limite du jour">${heavy.map(k => LIMITE_LABELS[k].emoji).join("")}</span>` : ""}</span>
         <span class="sv-row-qty"><input type="number" class="sv-g" data-meal="${type}" data-idx="${idx}" value="${e.g}" min="0.1" step="any" inputmode="decimal"> g ${unitHint}</span>
         <span class="sv-row-vals">
           <span class="v-sel">${fmtG(en.sel, 2)} g sel</span>
@@ -229,7 +266,9 @@ function renderPreview() {
         ou, pour un plat fait maison, <button class="inline-link sv-make-recette" data-nom="${escapeHtml($("#sv-food").value.trim())}">composer la recette</button></span>` : "";
     return;
   }
-  const n = itemNutrition({ id: food.id, g: g2 });
+  const eff = effectiveFood(food);
+  const n = {};
+  NUTRI_KEYS.forEach(k => { n[k] = (eff[k] || 0) * g2 / 100; });
   const t = dayTotals(svDate);
   const lim = getLimites();
   const after = SV_KEYS.map(k => {
@@ -244,6 +283,7 @@ function renderPreview() {
       ⚡ ${fmtG(n.g, 1)} g glucides (dont ${fmtG(n.suc, 1)} sucres) · 💪 ${fmtG(n.p, 1)} g protéines ·
       🌾 ${fmtG(n.fib, 1)} g fibres · 🍌 ${fmtG(n.pot, 0)} mg potassium · ${fmtKcal(n.kcal)} kcal
     </div>
+    ${allegeBoxHtml(food, eff, g2)}
     <div class="sv-preview-after">Après ajout : ${after.map(a =>
       `<span class="lim-chip ${a.st}">${LIMITE_LABELS[a.k].emoji} ${fmtG(a.v, LIMITE_LABELS[a.k].dec)}/${fmtG(lim[a.k], LIMITE_LABELS[a.k].dec)}</span>`).join(" ")}
       ${OBJ_KEYS.map(k => trackChipHtml(k, t[k] + n[k], lim[k])).join(" ")}</div>
@@ -254,6 +294,23 @@ function renderPreview() {
       <button class="inline-link sv-make-recette" data-nom="${escapeHtml(food.nom)} (ma recette)">Composer ma version</button></div>` : ""}
     ${overs.length ? `<div class="sv-warn">⚠️ Cela vous ferait dépasser votre limite de ${overs.map(o => LIMITE_LABELS[o.k].nom.toLowerCase()).join(", ")}.
       ${altSuggestionHtml(food, overs[0].k)}</div>` : ""}`;
+}
+
+/* Case « fait maison, moins salé et moins gras » + réglage des pourcentages */
+function allegeBoxHtml(food, eff, g) {
+  if (!allegeEligible(food)) return "";
+  const on = eff !== food;
+  const r = getAllege();
+  return `<div class="sv-allege ${on ? "on" : ""}">
+    <label class="sv-allege-check"><input type="checkbox" id="sv-allege" ${on ? "checked" : ""}>
+      🌿 <span>Fait maison, <strong>moins salé et moins gras</strong></span></label>
+    ${on ? `<div class="sv-allege-set">
+      <label>Sel <input type="number" id="sv-allege-sel" value="${r.sel}" min="0" max="100" step="5" inputmode="numeric"> % en moins</label>
+      <label>Gras <input type="number" id="sv-allege-l" value="${r.l}" min="0" max="100" step="5" inputmode="numeric"> % en moins</label>
+      <span class="small-note">Recette type : 🧂 ${fmtG((food.sel || 0) * g / 100, 2)} g sel · 🫒 ${fmtG((food.l || 0) * g / 100, 1)} g lipides.
+        Réglage commun à tous vos plats « maison ».</span>
+    </div>` : ""}
+  </div>`;
 }
 
 /* « assiette » → « assiettes », « c. à soupe » et « omelette (2 œufs) » inchangés */
@@ -474,7 +531,7 @@ function addFromForm() {
   }
   if (!(g > 0)) { toast("Indiquez une quantité"); $("#sv-qty").focus(); return; }
   const meal = $("#sv-meal").value;
-  addEntry(svDate, meal, food, g);
+  addEntry(svDate, meal, effectiveFood(food), g);
   $("#sv-food").value = "";
   renderSuivi();
   $("#sv-food").focus();
@@ -592,7 +649,8 @@ function exportData() {
     app: "NutriGuide", version: 1, exportedAt: new Date().toISOString(),
     journal: store.get("journal", {}), limites: store.get("limites", null),
     custom_foods: loadCustomFoods(), recents: store.get("recents", []),
-    objectifs: store.get("objectifs", null)
+    objectifs: store.get("objectifs", null),
+    allege: store.get("allege", null), allege_foods: store.get("allege_foods", [])
   };
   store.set("last_export", Date.now());
   renderBackupReminder();
@@ -613,6 +671,8 @@ function importData(file) {
       store.set("journal", cur);
       if (data.limites && data.limites.sel > 0) store.set("limites", data.limites);
       if (data.objectifs && data.objectifs.p > 0) store.set("objectifs", data.objectifs);
+      if (data.allege && typeof data.allege === "object") store.set("allege", data.allege);
+      if (Array.isArray(data.allege_foods)) store.set("allege_foods", [...new Set([...store.get("allege_foods", []), ...data.allege_foods])]);
       if (Array.isArray(data.custom_foods)) {
         const custom = loadCustomFoods();
         data.custom_foods.forEach(f => {
@@ -697,7 +757,7 @@ function setupSuivi() {
     const recent = e.target.closest(".sv-recent");
     if (recent) {
       const a = ALIMENTS_MAP[recent.dataset.id];
-      if (a) { addEntry(svDate, $("#sv-meal").value, a, +recent.dataset.g); renderSuivi(); toast(`${a.nom} ajouté`); }
+      if (a) { addEntry(svDate, $("#sv-meal").value, effectiveFood(a), +recent.dataset.g); renderSuivi(); toast(`${a.nom} ajouté`); }
       return;
     }
     const por = e.target.closest(".sv-portion");
@@ -730,6 +790,19 @@ function setupSuivi() {
     }
   });
   $("#page-suivi").addEventListener("change", (e) => {
+    if (e.target.id === "sv-allege") {
+      const { food } = findFood($("#sv-food").value);
+      if (food) setAllegeOn(food.id, e.target.checked);
+      renderPreview();
+      return;
+    }
+    if (e.target.id === "sv-allege-sel" || e.target.id === "sv-allege-l") {
+      const r = getAllege();
+      r[e.target.id === "sv-allege-sel" ? "sel" : "l"] = Math.min(100, Math.max(0, Math.round(+e.target.value || 0)));
+      store.set("allege", r);
+      renderPreview();
+      return;
+    }
     const gi = e.target.closest(".sv-g");
     if (gi) {
       const entry = journal[svDate] && journal[svDate][gi.dataset.meal][+gi.dataset.idx];
