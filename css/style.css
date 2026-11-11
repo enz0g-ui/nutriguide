@@ -1025,6 +1025,16 @@ main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
 .rc-ing[data-id=""] .rc-ing-food:not(:placeholder-shown) { border-color: var(--warn); }
 .rc-ac { right: 0 !important; max-height: 260px; }
 .rc-grid { margin-top: 12px; }
+.rc-ia { margin: 4px 0 12px; padding: 10px 12px; border: 1.5px solid var(--green-500); border-radius: 12px; background: var(--green-50); }
+.rc-ia summary { cursor: pointer; font-weight: 600; color: var(--green-700); }
+.rc-ia[open] summary { margin-bottom: 6px; }
+.rc-ia .small-note { margin: 0 0 8px; }
+.rc-ia textarea, .rc-ia input { width: 100%; box-sizing: border-box; padding: 10px; border: 1.5px solid var(--line); border-radius: 10px; font: inherit; font-size: 16px; background: var(--card, #fff); color: inherit; resize: vertical; }
+.rc-ia-step { display: block; font-weight: 600; font-size: .9rem; margin: 10px 0 4px; }
+.rc-ia-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.rc-ia .btn { margin-top: 8px; }
+.rc-ia-msg { margin: 8px 0 0; font-size: .88rem; line-height: 1.45; }
+.rc-ia-msg.warn { color: var(--warn); }
 .rc-summary { margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--green-50); font-size: .9rem; }
 .rc-summary .small-note { margin: 6px 0 0; }
 .rc-sum-part { line-height: 1.5; }

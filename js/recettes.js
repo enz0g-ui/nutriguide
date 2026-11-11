@@ -81,6 +81,12 @@ function openRecetteModal(food, nom) {
   $("#rc-parts").value = rcEditing ? rcEditing.recette.parts : 4;
   $("#rc-poids").value = rcEditing && rcEditing.recette.poids ? rcEditing.recette.poids : "";
   $("#rc-delete").hidden = !rcEditing;
+  // Assistant IA : seulement pour une nouvelle recette ; la description reprend le nom cherché
+  $("#rc-ia").hidden = !!rcEditing;
+  $("#rc-ia").open = false;
+  $("#rc-ia-plat").value = rcEditing ? "" : (nom || "");
+  $("#rc-ia-rep").value = "";
+  rcIaMsg("");
   rcRenderSummary();
   $("#recette-modal").hidden = false;
   const first = rcEditing ? $("#rc-parts") : ($("#rc-nom").value ? $(".rc-ing-food") : $("#rc-nom"));
@@ -159,6 +165,129 @@ function rcPick(row, a) {
   try { qty.select(); } catch { /* type=number */ }
 }
 
+/* ---------- Assistant IA : composition type d'un plat décrit en quelques mots ----------
+   Sans abonnement ni clé : l'app prépare une demande que l'on envoie à son propre
+   assistant (Claude, ChatGPT, Gemini, Le Chat…) par le partage d'Android, puis on
+   recolle sa réponse. L'IA ne donne que les ingrédients et leurs quantités ;
+   chaque ingrédient est retrouvé dans les tables de l'app (NutriGuide + Ciqual)
+   qui fournissent les valeurs. Ce qui n'est pas reconnu reste en orange. */
+function rcIaMsg(text, kind) {
+  const m = $("#rc-ia-msg");
+  m.hidden = !text;
+  m.className = "rc-ia-msg" + (kind ? " " + kind : "");
+  m.innerHTML = text;
+}
+function rcIaPrompt(plat) {
+  return `Je note mes repas dans une application de suivi (régime pauvre en sel). Donne-moi la composition d'une recette type, maison, de ce plat : ${plat}
+
+Règles :
+- Si le plat est peu courant ou régional, cherche une recette de référence.
+- Ingrédients du PLAT ENTIER, pesés avant cuisson, en grammes (1 œuf ≈ 55 g, 1 c. à soupe d'huile ≈ 10 g, 1 c. à café de sel ≈ 5 g…).
+- "recherche" : nom simple et générique de l'ingrédient tel qu'il figure dans la table Ciqual (1 à 3 mots, sans marque). Ex. : "farine de blé", "beurre", "lait demi-écrémé", "pomme de terre", "crème fraîche", "lardons", "huile d'olive", "oignon", "gruyère", "sel".
+- Bouillon ou fond : poids du cube ou de la poudre (1 cube ≈ 10 g, recherche "bouillon déshydraté"), pas le volume d'eau. L'eau ne compte pas.
+- Mets le sel de la recette sur sa propre ligne ("sel"), je l'ajusterai.
+- "poids_cuit_g" : poids approximatif du plat cuit, ou 0 si tu ne sais pas.
+
+Réponds UNIQUEMENT avec ce bloc JSON, sans autre texte :
+\`\`\`json
+{"nom": "…", "parts": 4, "poids_cuit_g": 0, "ingredients": [{"nom": "…", "recherche": "…", "g": 0}], "remarque": "une phrase : source ou hypothèse"}
+\`\`\``;
+}
+/* Lit la réponse collée : le bloc JSON demandé, sinon des lignes « 200 g de farine » */
+function rcIaParse(text) {
+  const t = String(text || "").replace(/[“”«»]/g, '"').replace(/[‘’]/g, "'");
+  const bloc = (t.match(/```(?:json)?\s*([\s\S]*?)```/) || [])[1] || t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1);
+  if (bloc && bloc.includes("{")) {
+    for (const s of [bloc, bloc.replace(/,\s*([}\]])/g, "$1")]) {
+      try {
+        const r = JSON.parse(s);
+        if (r && Array.isArray(r.ingredients) && r.ingredients.length) return r;
+      } catch { /* essai suivant */ }
+    }
+  }
+  const ingredients = [];
+  for (const line of t.split(/\n/)) {
+    const m = line.match(/(\d+(?:[.,]\d+)?)\s*(kg|g)\b\.?\s*(?:de |d'|d’)?\s*([^\d(:;]+)/i);
+    if (!m) continue;
+    const nom = m[3].replace(/[*_]/g, "").trim();
+    const g = parseFloat(m[1].replace(",", ".")) * (m[2].toLowerCase() === "kg" ? 1000 : 1);
+    if (nom && g > 0) ingredients.push({ nom, recherche: nom, g });
+  }
+  return ingredients.length ? { ingredients } : null;
+}
+/* Meilleur aliment pour un nom d'ingrédient : nom exact, sinon un nom qui commence par
+   le mot cherché ou le contient en mot entier (« ail » → « Ail, cru », pas « Lentilles corail »),
+   ingrédients bruts avant les plats. Rien de sûr : null (l'utilisateur choisira). */
+function rcMatch(...noms) {
+  for (const q of noms) {
+    if (!q || !q.trim()) continue;
+    const exact = ALIMENTS_BY_NAME[q.trim().toLowerCase()];
+    if (exact) return exact;
+    const nq = norm(q.trim()).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const mot = new RegExp(`(^|[^a-z0-9])${nq}s?([^a-z0-9]|$)`);
+    const rank = (a) => { const n = norm(a.nom); return n.startsWith(nq) && mot.test(n) ? 0 : mot.test(n) ? 1 : 2; };
+    const found = searchFoods(q, 40).filter(a => !a.approx && !a.recette)
+      .map((a, i) => ({ a, i, r: rank(a) + (a.plat ? 0.5 : 0) }))
+      .filter(x => x.r < 2)
+      .sort((x, y) => x.r - y.r || x.i - y.i);
+    if (found.length) return ensureFood(found[0].a);
+  }
+  return null;
+}
+function rcFillFromIa(rec) {
+  if (!$("#rc-nom").value.trim() && rec.nom) $("#rc-nom").value = String(rec.nom).slice(0, 60);
+  if (rec.parts > 0) $("#rc-parts").value = Math.round(rec.parts);
+  $("#rc-poids").value = rec.poids_cuit_g > 0 ? Math.round(rec.poids_cuit_g) : "";
+  const ings = $("#rc-ings");
+  ings.innerHTML = "";
+  let todo = 0;
+  for (const it of rec.ingredients || []) {
+    const g = Math.round((+it.g || 0) * 10) / 10;
+    if (!(g > 0)) continue;
+    const a = rcMatch(it.recherche, it.nom);
+    if (a) { ings.insertAdjacentHTML("beforeend", rcRowHtml({ id: a.id, q: g, u: "g" })); continue; }
+    todo++;
+    ings.insertAdjacentHTML("beforeend", rcRowHtml(null));
+    const row = ings.lastElementChild;
+    row.querySelector(".rc-ing-food").value = it.nom || it.recherche || "";
+    row.querySelector(".rc-ing-qty").value = g;
+  }
+  if (!ings.children.length) ings.insertAdjacentHTML("beforeend", rcRowHtml(null));
+  rcRenderSummary();
+  const n = ings.children.length;
+  const sel = (rec.ingredients || []).some(it => /\bsel\b/i.test(it.recherche || ""));
+  rcIaMsg(`✅ ${n} ingrédient${n > 1 ? "s" : ""} proposé${n > 1 ? "s" : ""}.` +
+    (todo ? ` <strong>${todo} à préciser</strong> (en orange) : touchez le nom et choisissez dans la liste.` : "") +
+    ` Vérifiez les quantités, comme pour votre propre cuisine${sel ? ", notamment le sel" : ""}.` +
+    (rec.remarque ? `<br><em>${escapeHtml(rec.remarque)}</em>` : ""), "ok");
+}
+async function rcIaSend(share) {
+  const plat = $("#rc-ia-plat").value.trim() || $("#rc-nom").value.trim();
+  if (plat.length < 3) { $("#rc-ia-plat").focus(); rcIaMsg("Décrivez d'abord le plat.", "warn"); return; }
+  const prompt = rcIaPrompt(plat);
+  let copied = false;
+  try { await navigator.clipboard.writeText(prompt); copied = true; } catch { /* pas d'accès au presse-papiers */ }
+  if (share && navigator.share) {
+    try {
+      await navigator.share({ text: prompt });
+      rcIaMsg("Quand l'assistant a répondu : <strong>copiez sa réponse</strong>, revenez ici et collez-la en 2.");
+      return;
+    } catch (e) { if (e.name === "AbortError") return; }
+  }
+  rcIaMsg(copied
+    ? "📋 Demande copiée. Ouvrez votre assistant (appli Claude, ChatGPT…), <strong>collez-la</strong>, puis recopiez sa réponse ici en 2."
+    : "Impossible de copier automatiquement : sélectionnez la description et réessayez.", copied ? "" : "warn");
+}
+function rcIaFill() {
+  const rec = rcIaParse($("#rc-ia-rep").value);
+  if (!rec) {
+    rcIaMsg("Je ne trouve pas d'ingrédients dans ce texte : copiez la réponse <strong>en entier</strong> (le bloc entre accolades { … }).", "warn");
+    return false;
+  }
+  rcFillFromIa(rec);
+  return true;
+}
+
 function setupRecettes() {
   const ings = $("#rc-ings");
   ings.addEventListener("input", (e) => {
@@ -234,6 +363,11 @@ function setupRecettes() {
     const inputs = $$("#rc-ings .rc-ing-food");
     inputs[inputs.length - 1].focus();
   });
+  $("#rc-ia-share").addEventListener("click", () => rcIaSend(true));
+  $("#rc-ia-copy").addEventListener("click", () => rcIaSend(false));
+  $("#rc-ia-fill").addEventListener("click", rcIaFill);
+  // Remplissage dès que la réponse est collée
+  $("#rc-ia-rep").addEventListener("paste", () => setTimeout(() => { if (rcIaParse($("#rc-ia-rep").value)) rcIaFill(); }, 50));
   $("#rc-parts").addEventListener("input", rcRenderSummary);
   $("#rc-poids").addEventListener("input", rcRenderSummary);
   $("#recette-form").addEventListener("submit", saveRecette);

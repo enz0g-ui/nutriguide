@@ -566,6 +566,21 @@
     <form class="modal-body food-form" id="recette-form" autocomplete="off">
       <p class="liste-sub">Notez les ingrédients du <strong>plat entier</strong>, tels que vous les pesez avant cuisson,
         puis le nombre de parts : NutriGuide calcule ce que représente une part.</p>
+      <details class="rc-ia" id="rc-ia">
+        <summary>✨ Remplir avec mon assistant IA (Claude, ChatGPT…)</summary>
+        <p class="small-note">Votre assistant habituel trouve la recette type ; NutriGuide calcule ensuite les valeurs
+          avec ses propres tables (Ciqual). Rien à payer, rien à installer de plus.</p>
+        <label class="rc-ia-step" for="rc-ia-plat">1. Décrivez le plat</label>
+        <textarea id="rc-ia-plat" rows="2" maxlength="400" placeholder="Ex. gratin dauphinois pour 6 personnes, avec un peu de muscade"></textarea>
+        <div class="rc-ia-btns">
+          <button type="button" class="btn btn-primary btn-sm" id="rc-ia-share">📤 Envoyer à mon assistant</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="rc-ia-copy">📋 Copier la demande</button>
+        </div>
+        <label class="rc-ia-step" for="rc-ia-rep">2. Copiez sa réponse en entier et collez-la ici</label>
+        <textarea id="rc-ia-rep" rows="3" placeholder="Collez la réponse de l'assistant…"></textarea>
+        <button type="button" class="btn btn-ghost btn-sm" id="rc-ia-fill">✅ Remplir la recette</button>
+        <p class="rc-ia-msg" id="rc-ia-msg" hidden></p>
+      </details>
       <div class="form-row"><label for="rc-nom">Nom du plat</label>
         <input type="text" id="rc-nom" required maxlength="60" placeholder="Ex. Cacasse de mamie, tarte aux pommes…"></div>
       <label class="rc-label">Ingrédients</label>
